@@ -1,4 +1,4 @@
-# Azure Networking Engineering Blog
+# Azure Networking Blog
 
 Hands-on diagnostics, gotchas, and field findings from deploying and troubleshooting Azure Networking labs.
 
