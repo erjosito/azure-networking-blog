@@ -4,6 +4,8 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 ## Posts
 
+The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
+
 - **[2026-05] The route table that didn't lie**: Diagnosing ExpressRoute BGP with the Azure CLI
   - [Read post](./2026-05-expressroute-megaport-bgp/)
 
