@@ -18,7 +18,19 @@ It also says this about stateful devices on ExpressRoute private peering:
 
 That second quote is the assumption this lab breaks. In secured vWAN, routing intent sends private traffic through the hub firewall. The firewall is stateful. If the outbound SYN traverses Hub1's firewall and the return SYN-ACK traverses Hub2's firewall, Hub2 has no session state. The packet is dropped by the state engine. Azure Firewall does not emit a neat `Deny` record for that state miss.
 
-The baseline evidence is in `labs\vwan-dual-er-symmetric\show-output\design-c-asymmetric-2026-06-15\README.md`. Probe 09 shows `spoke1` to `vm_b` had one success and two timeouts. The firewall correlation says AzFW1 logged the forward SYNs, while AzFW2 had zero entries for the same flow pair:
+The baseline evidence is in `labs\vwan-dual-er-symmetric\show-output\design-c-asymmetric-2026-06-15\README.md`. Probe 09 shows `spoke1` to `vm_b` had one success and two timeouts. The firewall correlation says AzFW1 logged the forward SYNs, while AzFW2 had zero entries for the same flow pair.
+
+Query (run for each hub with `az monitor log-analytics query -w law-vwan-symm-103167`):
+
+```kql
+AzureDiagnostics
+| where ResourceType == "AZUREFIREWALLS"
+| where TimeGenerated > ago(60m)
+| where ResourceGroup =~ "rg-vwan-symm-103167"
+| where msg_s contains "10.50.2.2" or msg_s contains "10.11.0"
+| project TimeGenerated, Resource, msg_s
+| order by TimeGenerated asc
+```
 
 ```text
 22:12:41  AZFW-HUB1-SWEDENCENTRAL  TCP SYN 10.11.0.4 -> 10.50.2.2:22  Allow
@@ -26,7 +38,13 @@ The baseline evidence is in `labs\vwan-dual-er-symmetric\show-output\design-c-as
 AZFW-HUB2-NORTHEUROPE  ZERO entries for 10.11.0.4 <-> 10.50.2.2
 ```
 
-That absence is the proof. In the same folder, `09-tcp-spoke1-to-vmb-x5.txt` shows the TCP symptom:
+That absence is the proof. In the same folder, `09-tcp-spoke1-to-vmb-x5.txt` shows the TCP symptom, retrieved by running the probe on the spoke VM:
+
+```bash
+az vm run-command invoke -g rg-vwan-symm-103167 -n vm-spoke1 \
+  --command-id RunShellScript \
+  --scripts "for i in 1 2 3 4 5; do nc -zv -w5 10.50.2.2 22; done"
+```
 
 ```text
 Connection to 10.50.2.2 22 port [tcp/ssh] succeeded!
@@ -98,7 +116,14 @@ The old ExpressRoute private peering assumption was: parallel paths are mostly a
 
 Secured vWAN inserts that stateful device by design.
 
-In the baseline, GCP Cloud Router installed the spoke `/24` prefixes through both MCRs at priority 0. The key table is in `show-output\design-c-asymmetric-2026-06-15\README.md` and the raw status is in `07-router-a-status.txt`:
+In the baseline, GCP Cloud Router installed the spoke `/24` prefixes through both MCRs at priority 0. The key table is in `show-output\design-c-asymmetric-2026-06-15\README.md` and the raw status is in `07-router-a-status.txt`, retrieved from the Cloud Router:
+
+```bash
+gcloud compute routers get-status router-vwan-symm-a \
+  --region europe-west3 --project gcp-vwan-symm-103167 --format json
+```
+
+The summarized result:
 
 ```text
 Prefix          Via MCR1        Via MCR2        AS-path MCR1      AS-path MCR2      GCP decision
@@ -181,7 +206,12 @@ We rejected 23456 because it does carry semantics. RFC 6793 defines AS_TRANS as 
 
 The other critical correction is propagation. vWAN Route Maps do **not** strip the reserved ASN before the route reaches GCP. The prepended 64496 stays visible in the BGP AS path all the way to Cloud Router. That visibility is the mechanism. If Azure stripped it, GCP would never see the de-preference signal.
 
-C1 evidence in `show-output\design-c-mechC1-symmetric-2026-06-16\02-cr-routes-summary.txt` shows the marker clearly:
+C1 evidence in `show-output\design-c-mechC1-symmetric-2026-06-16\02-cr-routes-summary.txt` shows the marker clearly, again from `get-status` on the Cloud Router:
+
+```bash
+gcloud compute routers get-status router-vwan-symm-a \
+  --region europe-west3 --project gcp-vwan-symm-103167 --format json
+```
 
 ```text
 10.11.0.0/24  MCR1  65001 12076                                len=2
@@ -190,7 +220,12 @@ C1 evidence in `show-output\design-c-mechC1-symmetric-2026-06-16\02-cr-routes-su
 10.21.0.0/24  MCR1  65001 12076 64496 64496 64496 65520 65520  len=7
 ```
 
-C2 evidence in `show-output\design-c-mechC2-symmetric-2026-06-16\02-gcp-cr-bestroutes-table.txt` shows the standby path with five prepends:
+C2 evidence in `show-output\design-c-mechC2-symmetric-2026-06-16\02-gcp-cr-bestroutes-table.txt` shows the standby path with five prepends. This is the same `get-status` output, projected to `destRange / nextHopIp / asPath`:
+
+```bash
+gcloud compute routers get-status router-vwan-symm-a \
+  --region europe-west3 --project gcp-vwan-symm-103167 --format json
+```
 
 ```text
 10.11.0.0/24  169.254.159.194  65001 12076
@@ -207,12 +242,25 @@ The route maps did what they were configured to do. Files `03-az-routemap-hub1.j
 
 The best-routes table in `02-cr-routes-summary.txt` also proves this is an Azure-side change that GCP can see. The `/23` hub aggregates become single-path:
 
+```bash
+gcloud compute routers get-status router-vwan-symm-a \
+  --region europe-west3 --project gcp-vwan-symm-103167 --format json
+```
+
 ```text
 10.10.0.0/23  169.254.159.194  65001 12076  SINGLE-PATH
 10.20.0.0/23  169.254.93.154   65002 12076  SINGLE-PATH
 ```
 
-The operational improvement is huge. The KQL summary in `10-azfw1-kql.txt` says:
+The operational improvement is huge. The KQL summary in `10-azfw1-kql.txt` counts cross-contaminating flows before and after the route maps:
+
+```kql
+AzureDiagnostics
+| where TimeGenerated > ago(60m) and Category == "AzureFirewallNetworkRule"
+| where msg_s contains "10.50"
+| extend SourceIP = extract(@"from (\d+\.\d+\.\d+\.\d+)", 1, msg_s)
+| project TimeGenerated, Resource, SourceIP, msg_s
+```
 
 ```text
 Baseline cross-contamination:
@@ -245,6 +293,11 @@ The C2 configuration is captured in `show-output\design-c-mechC2-symmetric-2026-
 
 This produced the intended primary path. The C2 `02-gcp-cr-bestroutes-table.txt` shows MCR1's clean path and MCR2's prepended standby path side by side for the spoke `/24`s:
 
+```bash
+gcloud compute routers get-status router-vwan-symm-a \
+  --region europe-west3 --project gcp-vwan-symm-103167 --format json
+```
+
 ```text
 10.11.0.0/24  169.254.159.194  65001 12076
 10.11.0.0/24  169.254.93.154   65002 12076 64496 64496 64496 64496 64496
@@ -258,7 +311,14 @@ This produced the intended primary path. The C2 `02-gcp-cr-bestroutes-table.txt`
 
 That table shows the intended BGP outcome: MCR1 has the shorter primary path and MCR2 carries the longer standby path. A normal on-premises CE would pick the MCR1 path and install one eBGP best route.
 
-The data plane and firewall logs confirm the GCP simulator caveat. `04-probe-spoke1-vma.txt` had two successes out of five. `06-probe-spoke3-vma.txt` had five successes out of five, which shows the hash-dependent nature of the GCP route-priority artifact. The KQL summary in `08-azfw-kql-cross-contamination-summary.txt` says:
+The data plane and firewall logs confirm the GCP simulator caveat. `04-probe-spoke1-vma.txt` had two successes out of five. `06-probe-spoke3-vma.txt` had five successes out of five, which shows the hash-dependent nature of the GCP route-priority artifact. The KQL summary in `08-azfw-kql-cross-contamination-summary.txt` tallies which firewall saw which spoke source:
+
+```kql
+AzureDiagnostics
+| where TimeGenerated between (datetime(2026-06-16T08:40:00Z) .. datetime(2026-06-16T09:20:00Z))
+| where Category in ("AzureFirewallNetworkRule","AZFWNetworkRule")
+| where msg_s contains "10.50"
+```
 
 ```text
 AZFW-HUB1-SWEDENCENTRAL  10.11.0.4  11  Expected C2 Azure egress via Hub1 primary
@@ -268,7 +328,20 @@ AZFW-HUB2-NORTHEUROPE    10.21.0.4   5  CROSS-CONTAMINATION: spoke-source flow o
 
 So C2 is a working active/passive symmetry design for standards-compliant peers, with one simulator caveat for GCP Cloud Router's VPC route-priority behavior. The failover behavior is excellent.
 
-The primary-down test in `13-failover-during-primary-down.json` disabled the MCR1 GCP BGP peer. GCP moved the spoke `/24`s to MCR2-only in **54.2 seconds**:
+The primary-down test in `13-failover-during-primary-down.json` disabled the MCR1 GCP BGP peer, then polled the Cloud Router until the spoke prefixes were MCR2-only:
+
+```bash
+# inject the fault: disable the MCR1-facing BGP peer on the Cloud Router
+gcloud compute routers update-bgp-peer router-vwan-symm-a \
+  --peer-name auto-ia-bgp-att-vwan-symm-a-748c416bf214189 \
+  --region europe-west3 --project gcp-vwan-symm-103167 --no-enabled --quiet
+
+# then poll get-status every 10s until spoke prefixes are MCR2-only
+gcloud compute routers get-status router-vwan-symm-a \
+  --region europe-west3 --project gcp-vwan-symm-103167 --format json
+```
+
+GCP moved the spoke `/24`s to MCR2-only in **54.2 seconds**:
 
 ```text
 10.11.0.0/24  169.254.93.154  65002 12076 64496 64496 64496 64496 64496
@@ -287,7 +360,13 @@ The lab used GCP Cloud Router to simulate an on-premises peer. That made the lab
 
 Under the standard BGP best-path algorithm, AS-path length is evaluated before MED. A Cisco, Juniper, Arista, MikroTik, or similar on-premises router receives the unprepended two-hop path and the prepended longer path, rejects the longer AS path at that step, and installs a single best eBGP route by default. In that normal case, Mech C1 and C2 do exactly what we need for secured-vWAN firewall symmetry.
 
-GCP Cloud Router behaved differently at the VPC route installation layer. For the `/23` aggregates, GCP installed one path. For all four spoke `/24`s, it installed both paths at `priority=0`, even when one path was much longer:
+GCP Cloud Router behaved differently at the VPC route installation layer. For the `/23` aggregates, GCP installed one path. For all four spoke `/24`s, it installed both paths at `priority=0`, even when one path was much longer. The per-route VPC priority is visible in the `get-status` route entries:
+
+```bash
+gcloud compute routers get-status router-vwan-symm-a \
+  --region europe-west3 --project gcp-vwan-symm-103167 \
+  --format="table(result.bestRoutes.destRange, result.bestRoutes.asPaths.asLists, result.bestRoutes.priority)"
+```
 
 ```text
 10.11.0.0/24  65001 12076                                      priority 0
