@@ -68,6 +68,30 @@ The topology evidence is in `labs\vwan-dual-er-symmetric\show-output\design-c-ph
 
 The important modeling choice is that GCP Cloud Router is the on-premises side. In a real customer network that could be a carrier-managed virtual router, an interconnect partner device, or another cloud's routing appliance. The point is the same: the customer may not own the CE router where the original article expects AS-path and local-preference work to happen.
 
+```mermaid
+flowchart LR
+    VMA["vm_a<br/>10.50.1.0/24 (eu-w3)"]
+    VMB["vm_b<br/>10.50.2.0/24 (eu-w4)"]
+    CR["GCP Cloud Router<br/>ASN 16550"]
+    MCR1["MCR1 Frankfurt<br/>ASN 65001"]
+    MCR2["MCR2 Amsterdam<br/>ASN 65002"]
+    HUB1["Hub1 swedencentral<br/>10.10.0.0/23 + AzFW1<br/>vWAN ASN 65515"]
+    HUB2["Hub2 northeurope<br/>10.20.0.0/23 + AzFW2<br/>vWAN ASN 65515"]
+    S1["Spoke1 10.11.0.0/24<br/>Spoke2 10.12.0.0/24"]
+    S3["Spoke3 10.21.0.0/24<br/>Spoke4 10.22.0.0/24"]
+    VMA --- CR
+    VMB --- CR
+    CR -->|att_a / VXC| MCR1
+    CR -->|att_b / VXC| MCR2
+    MCR1 -->|"ER1, MSEE 12076"| HUB1
+    MCR2 -->|"ER2, MSEE 12076"| HUB2
+    HUB1 --- S1
+    HUB2 --- S3
+    HUB1 <-->|hub-to-hub| HUB2
+```
+
+*One GCP Cloud Router peers with both Megaport MCRs; each MCR lands on its own ExpressRoute circuit into a secured vWAN hub. The single CR with two equal-cost paths is what makes the return direction ambiguous.*
+
 ## 4. Blind spot 1: secured vWAN hubs have stateful firewalls
 
 The old ExpressRoute private peering assumption was: parallel paths are mostly a performance and consistency concern unless you happen to insert a stateful device.
@@ -85,6 +109,20 @@ Prefix          Via MCR1        Via MCR2        AS-path MCR1      AS-path MCR2  
 ```
 
 That makes the return path a per-flow hash. For a Hub1 source, a return flow that hashes to MCR2 enters Hub2 and hits AzFW2. AzFW2 never saw the SYN. The SYN-ACK dies.
+
+```mermaid
+flowchart LR
+    subgraph FWD["Forward: SYN"]
+        direction LR
+        A1["Spoke1 in Hub1"] --> A2["AzFW1<br/>creates flow state"] --> A3["MCR1"] --> A4["GCP vm"]
+    end
+    subgraph RET["Return: SYN-ACK, ECMP hash picks MCR2"]
+        direction LR
+        B1["GCP vm"] --> B2["MCR2"] --> B3["Hub2 AzFW2<br/>no matching state"] --> B4(("silent drop<br/>no deny log"))
+    end
+```
+
+*The firewall is stateful, but the two directions take different hubs. AzFW2 sees a SYN-ACK for a flow whose SYN it never processed, so it drops the packet, and because it is a stateful drop rather than a policy deny, nothing is logged.*
 
 The firewall correlation in the same baseline folder proves both directions of the problem:
 
@@ -118,6 +156,20 @@ The lab tested two mechanisms, each mapped to one of the Learn article's scenari
 | Scenario 1, active/passive | Mech C2 | Hub1 primary, Hub2 standby, blanket OUTBOUND prepend AS 64496 five times, Hub2 INBOUND prepend, `hub_routing_preference=ASPath` | `show-output\design-c-mechC2-symmetric-2026-06-16\15-verdict.md` |
 
 The mechanism spec is in `labs\vwan-dual-er-symmetric\design.md`, section 4. The route map constraints are important: vWAN Route Maps accept 2-byte ASNs, reject private ASNs, and must not use Azure-reserved ASNs. The lab verified that Azure Route Maps accepted AS 64496.
+
+```mermaid
+flowchart LR
+    subgraph FWD["Forward: SYN"]
+        direction LR
+        A1["Spoke1 in Hub1"] --> A2["AzFW1<br/>creates flow state"] --> A3["MCR1"] --> A4["GCP vm"]
+    end
+    subgraph RET["Return: SYN-ACK, MCR1 path wins on shorter AS-path"]
+        direction LR
+        B1["GCP vm"] --> B2["MCR1<br/>home path 65001 12076"] --> B3["Hub1 AzFW1<br/>state matches"] --> B4(("delivered"))
+    end
+```
+
+*The outbound route map prepends AS 64496 onto the remote-region path, so the standby route via MCR2 reads `65002 12076 64496 64496 64496 ...`. A standards-compliant router compares AS-path length before MED and installs the single shorter home path, so the SYN-ACK returns through the same hub and firewall that saw the SYN.*
 
 ## 7. Why the prepend ASN is 64496, not 23456
 
