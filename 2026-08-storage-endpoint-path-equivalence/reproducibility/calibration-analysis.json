@@ -1,0 +1,29 @@
+{
+  "schema": "sepath.translator.calibration.analysis.v1",
+  "blocks": 10,
+  "measured_requests": 800,
+  "warmup_requests": 400,
+  "errors": 0,
+  "timeouts": 0,
+  "predeclared_injected_delay_ms": 25.0,
+  "predeclared_expected_shift_ms": [
+    20.0,
+    30.0
+  ],
+  "control_p50_ms": 36.156523750378255,
+  "noise_floor_ms": 2.7012656499209697,
+  "equivalence_margin_floor_ms": 3.6156523750378255,
+  "detection_floor_ms": 5.0,
+  "observed_p50_delta_ms": 23.29027945006601,
+  "p50_delta_ci95_ms": [
+    22.078363222849475,
+    24.481369175173313
+  ],
+  "observed_p95_delta_ms": 23.70468850040197,
+  "p95_delta_ci95_ms": [
+    19.554063500618213,
+    28.293174768014065
+  ],
+  "sensitivity_detected": true,
+  "interpretation": "Positive-control sensitivity only; this does not establish endpoint path identity."
+}

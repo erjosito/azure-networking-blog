@@ -1,0 +1,32 @@
+{
+  "blocks": 10,
+  "concurrency": 1,
+  "warmup_requests_per_variant": 20,
+  "margins": {
+    "latency_p50_ratio": [
+      0.9,
+      1.1
+    ],
+    "error_rate_absolute": 0.005,
+    "retransmit_rate_absolute": 0.002,
+    "jitter_ratio": [
+      0.8,
+      1.2
+    ],
+    "jitter_absolute_ms": 2,
+    "throughput_ratio": [
+      0.9,
+      1.1
+    ],
+    "latency_p95_ratio": [
+      0.85,
+      1.15
+    ]
+  },
+  "sku": "Translator F0",
+  "quota_guard": "Concurrency 1 only; fixed 19-character request; 0.5-second pacing; no 8/32 concurrency or 8-MiB payload.",
+  "run_id": "sepath-validation-20260806T133000Z",
+  "interval_seconds": 0.5,
+  "region": "swedencentral",
+  "measured_requests_per_variant": 40
+}
