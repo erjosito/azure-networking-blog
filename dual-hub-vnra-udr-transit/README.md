@@ -1,29 +1,33 @@
-﻿# Managed VNRA Multi-Region UDR Transit: The Silent Peering Trap
+﻿# Azure Managed VNRA: Multi-Region Transit Design, Observability Limits, and the Two Peering Prerequisites
 
 **Posted:** 2026-08-19 | **By:** Kid (Blog Writer, net-lab-builder) | **Lab:** [dual-hub-vnra-udr-transit](https://github.com/erjosito/net-lab-builder/tree/main/labs/dual-hub-vnra-udr-transit)
 
 ---
 
-## The Headline
+## What This Covers
 
-Azure's new **managed Virtual Network Routing Appliance (VNRA)** can chain traffic across regions via UDRs to provide transparent east-west transit between spokes—and it works. But the path to success is paved with one silent killer: a peering flag misconfiguration that looks perfectly correct in the Azure Portal yet drops 100% of traffic.
+Azure's **managed Virtual Network Routing Appliance (VNRA)** — GA since August 2026 — is a hardware-based forwarder at 50–200 Gbps per appliance with no customer-managed OS, no SSH access, and no customer NIC. For teams building cross-region east-west transit without deploying and managing a Linux VM NVA, it is the right technology. But several non-obvious behaviors determine whether that transit actually flows:
 
-**Proof:** Two managed 50-Gbps VNRAs (one per regional hub), four UDRs, one global VNet peering. Final result after fix:
+**Two peering flags are jointly required.** `allowVirtualNetworkAccess` AND `allowForwardedTraffic` must both be `true` on every peering leg in both directions. A peering that shows `Connected`/`FullyInSync` with only `allowForwardedTraffic=true` silently drops 100% of data-plane traffic. The control plane reports no error.
+
+**The VNRA has no effective-route API.** The `VirtualNetworkApplianceSubnet/effectiveRouteTable` endpoint returns HTTP 404 as of August 2026. Diagnosing what the hardware sees requires indirect methods: spoke VM NIC effective routes, configured UDR tables, and Azure Monitor metrics.
+
+**VNRA is TTL-invisible in traceroute.** Hardware forwarding does not decrement TTL. A single-hop tracepath reaching the destination is the definitive proof that the appliance is forwarding correctly — not evidence that it was bypassed.
+
+This post covers the validated two-region hub-spoke-VNRA design, the exact route table chain, the peering prerequisites with a diagnostic walkthrough for silent failure, and the full observability surface available on managed VNRA.
+
+**Validated results (50 Gbps VNRAs, swedencentral ↔ northeurope, post-fix):**
 
 | Direction | Packets | Loss | Avg RTT |
 |-----------|---------|------|---------|
 | Sweden→Europe | 10/10 | **0%** | 33.094 ms |
 | Europe→Sweden | 10/10 | **0%** | 31.372 ms |
 
-**The trap:** All six peering objects showed `Connected`/`FullyInSync` with `allowForwardedTraffic=true`, yet data-plane traffic was silently dropped. Root cause: **`allowVirtualNetworkAccess=false`** on every peering leg. Neither flag is optional; both must be explicitly `true` on every direction.
-
 ---
 
-## The Setup
+## Architecture
 
-**Topology:** swedencentral and northeurope, globally peered. Each region has a hub VNet with one managed VNRA (50 Gbps), and a spoke VNet with a test VM.
-
-The two-region layout uses a hub-spoke model in each region, with a global peering connecting the two hubs:
+The validated topology uses a hub-spoke model in each region, with a global VNet peering connecting the two regional hubs. Each hub contains one managed VNRA; each spoke contains one test VM.
 
 ```mermaid
 graph TB
@@ -59,12 +63,20 @@ graph TB
     style S2 fill:#f5f5f5
 ```
 
-**UDR chain (forward):**
-1. test1-vm (10.10.1.4, spoke1) → rt-spoke1 routes 10.20.0.0/16 to VNRA1 (10.1.0.4)
-2. VNRA1 (hub1) → rt-hub1-vnra routes 10.20.0.0/16 to VNRA2 (10.2.0.4) **across global peering**
-3. VNRA2 (hub2) → system route via regional peering to test2-vm (10.20.1.4, spoke2)
+**Managed VNRA distinguishers** (relevant to design decisions):
 
-The forward and return data paths each traverse two VNRAs and the inter-hub global peering:
+- No user NIC, no OS disk, no cloud-init. Created via `az rest` (REST API) or Terraform AzAPI provider — there is no `az network routing-appliance` subcommand.
+- Reserves 5 consecutive IPs from its subnet (primary + 4 secondary). A 50 Gbps VNRA in 10.1.0.0/24 occupies 10.1.0.4–10.1.0.8. A /29 cannot fit one; use /24 for production.
+- GA API schema: `properties.bandwidthInGbps: "50"` (string). The preview `virtualNetworkApplianceSku.scalingBandwidth` shape is obsolete.
+- No ILB placement supported in front of VNRA (unlike VM NVA).
+
+---
+
+## The UDR Transit Chain
+
+Four route tables wire the two-VNRA forwarding path. The cross-hub tables (orange border below) are the empirically interesting legs: they route traffic across the global peering between two managed appliances.
+
+**Forward: swedencentral → northeurope**
 
 ```mermaid
 graph LR
@@ -92,6 +104,8 @@ graph LR
     style SYS2 fill:#fff9c4
 ```
 
+**Return: northeurope → swedencentral**
+
 ```mermaid
 graph LR
     TEST2R["🖱️ test2-vm<br/>10.20.1.4<br/>spoke2-vnet"]
@@ -118,35 +132,36 @@ graph LR
     style SYS1 fill:#fff9c4
 ```
 
-**Managed VNRA** is hardware-based (no OS, no customer NIC), created via Azure REST API (`Microsoft.Network/virtualNetworkAppliances`), GA since August 2026. Bandwidth tiers: 50/100/200 Gbps.
+**Route table summary:**
+
+| Route Table | Subnet | CIDR | Next Hop Type | Next Hop IP |
+|---|---|---|---|---|
+| `rt-spoke1` | spoke1-vnet/vm-subnet | 10.20.0.0/16 | VirtualAppliance | 10.1.0.4 |
+| `rt-hub1-vnra` | hub1-vnet/VirtualNetworkApplianceSubnet | 10.20.0.0/16 | VirtualAppliance | 10.2.0.4 |
+| `rt-hub2-vnra` | hub2-vnet/VirtualNetworkApplianceSubnet | 10.10.0.0/16 | VirtualAppliance | 10.1.0.4 |
+| `rt-spoke2` | spoke2-vnet/vm-subnet | 10.10.0.0/16 | VirtualAppliance | 10.2.0.4 |
+
+Notes on the chain: `VirtualAppliance` next-hop across a global VNet peering is valid and confirmed working. No IP forwarding flag is required on VNRA (it has no customer NIC). No ILB is required or supported in front of the appliance.
 
 ---
 
-## What Went Wrong
+## Peering Prerequisites: Both Flags Are Required on Every Leg
 
-**Initial validation:** 100% packet loss both directions. Azure Monitor showed zero bytes/packets on both VNRAs. Network Watcher confirmed UDRs were Active on spoke NICs and correctly steered traffic to the VNRA—so why no forwarding?
+VNet peerings for hub-spoke UDR topologies require two distinct flags. In VNRA topologies this matters more than in VM NVA topologies because VNRA has fewer diagnostic surfaces to catch the problem after the fact.
 
-### The Control Plane Looked Perfect
+### `allowVirtualNetworkAccess=true`
 
-✅ All four route tables created and associated  
-✅ Spoke NIC effective routes: UDRs `Active`  
-✅ Hub VNRA NIC effective routes: UDRs correct  
-✅ Network Watcher next-hop from spoke: `NextHop=VirtualAppliance/10.1.0.4`  
-✅ Peering states: `Connected` and `FullyInSync` on all six legs  
-✅ `allowForwardedTraffic=true` on all peerings  
+Permits any traffic *to* the remote VNet's address space. This is the foundational SDN-fabric permission: without it, the Azure SDN fabric does not forward packets between the peered VNets regardless of routing, UDRs, or appliance state. **This flag is required even when the peering state is `Connected`/`FullyInSync`.**
 
-### The Data Plane Died Silently
+### `allowForwardedTraffic=true`
 
-```
-test1-vm → test2-vm: 0 received, 100% packet loss, time 9224ms
-tracepath: 19 hops, all "no reply"
-VNRA1 metrics (BytesSent, PacketsSent): all zero
-VNRA2 metrics (BytesSent, PacketsSent): all zero
-```
+Permits traffic *forwarded from* the remote VNet. Required for hub-spoke transit where a hub appliance (VNRA, firewall, NVA) processes traffic arriving from the spoke, then forwards it onward. Without this flag, the remote VNet's SDN fabric will not accept forwarded packets from the hub.
 
-### Root Cause: The Missing Flag
+### The Silent Failure Pattern
 
-Inspecting the peering objects in detail revealed the culprit: **`allowVirtualNetworkAccess=false`** on all six peerings (hub1↔spoke1, hub2↔spoke2, hub1↔hub2, in both directions).
+A peering with `allowVirtualNetworkAccess=false` and `allowForwardedTraffic=true` will show `peeringState: Connected` and `peeringSyncLevel: FullyInSync` in the Azure API. There is no error flag, no portal warning, no Azure Monitor alert. The data plane silently drops 100% of traffic.
+
+The API response for a misconfigured peering looks like this:
 
 ```json
 {
@@ -154,60 +169,106 @@ Inspecting the peering objects in detail revealed the culprit: **`allowVirtualNe
   "peeringState": "Connected",
   "peeringSyncLevel": "FullyInSync",
   "allowVirtualNetworkAccess": false,
-  "allowForwardedTraffic": true,
+  "allowForwardedTraffic": true
 }
 ```
 
-**Why this is a trap:** `allowForwardedTraffic=true` permits traffic *forwarded from* the remote VNet. But `allowVirtualNetworkAccess=true` permits traffic *to* the remote VNet's address space—the foundational requirement for any connectivity. The Azure SDN fabric silently drops packets destined for peered address spaces when this flag is false.
+### Verification Commands
+
+Check all six peering legs (hub1↔spoke1, hub2↔spoke2, hub1↔hub2, both directions each) immediately after provisioning:
+
+```bash
+az network vnet peering show \
+  --resource-group <rg> \
+  --vnet-name hub1-vnet \
+  --name hub1-to-spoke1 \
+  --query "{allowVirtualNetworkAccess: allowVirtualNetworkAccess, allowForwardedTraffic: allowForwardedTraffic, state: peeringState}"
+```
+
+If either flag is `false`, correct it before testing:
+
+```bash
+az network vnet peering update \
+  --resource-group <rg> \
+  --vnet-name hub1-vnet \
+  --name hub1-to-spoke1 \
+  --set allowVirtualNetworkAccess=true allowForwardedTraffic=true
+```
+
+Repeat for every peering in both directions. The flag defaults vary by provisioning method (Portal, CLI, Terraform, ARM template); always verify explicitly rather than assuming.
 
 ---
 
-## The Fix and Verification
+## Diagnosing Silent Data-Plane Failure
 
-Set `allowVirtualNetworkAccess=true` on all six peerings (retaining `allowForwardedTraffic=true`). Immediate result:
+When multi-hop UDR transit fails silently, the diagnostic process should work through control-plane and data-plane evidence systematically, because each layer can appear healthy while the one below it is broken.
+
+### Layer 1: Is the routing intent correct?
+
+Network Watcher Next Hop confirms the routing decision from the spoke VM's perspective:
+
+```bash
+az network watcher show-next-hop \
+  --resource-group <rg> \
+  --vm test1-vm \
+  --source-ip 10.10.1.4 \
+  --dest-ip 10.20.1.4
+# Expected: nextHopType=VirtualAppliance, nextHopIpAddress=10.1.0.4
+```
+
+If this returns `VirtualAppliance`, the UDR is programmed correctly. The problem is downstream.
+
+### Layer 2: Is the appliance receiving traffic?
+
+Azure Monitor metrics confirm whether packets are reaching the VNRA:
+
+```bash
+az monitor metrics list \
+  --resource-group <rg> \
+  --resource vnra1 \
+  --resource-type "Microsoft.Network/virtualNetworkAppliances" \
+  --metric BytesReceived PacketsReceived \
+  --start-time <start> --end-time <end>
+```
+
+Zero `BytesReceived` and `PacketsReceived` while routing is confirmed correct means traffic is being dropped between the spoke NIC and the VNRA — at the peering or fabric layer.
+
+### Layer 3: Are the peerings permitting data-plane traffic?
+
+Check `allowVirtualNetworkAccess` on every peering (not just `peeringState`). A peering that shows `Connected/FullyInSync` but has `allowVirtualNetworkAccess=false` passes all control-plane checks and fails all data-plane tests. This flag is the most frequent silent failure point in hub-spoke UDR topologies.
+
+### What a Working Transit Path Looks Like
+
+After setting both flags to `true` on all six peerings:
 
 ```
-test1-vm → test2-vm (swedencentral → northeurope)
-  10 packets transmitted, 10 received, 0% packet loss
-  min/avg/max = 32.786/33.094/34.601 ms
+# swedencentral → northeurope
+10 packets transmitted, 10 received, 0% packet loss
+rtt min/avg/max = 32.786/33.094/34.601 ms
 
-test2-vm → test1-vm (northeurope → swedencentral)
-  10 packets transmitted, 10 received, 0% packet loss
-  min/avg/max = 30.794/31.372/33.228 ms
+# northeurope → swedencentral
+10 packets transmitted, 10 received, 0% packet loss
+rtt min/avg/max = 30.794/31.372/33.228 ms
 
-Tracepath: 1 hop (destination reached)
-  1: 10.20.1.4  30.102 ms reached
+Tracepath: 1 hop (destination reached directly)
+  1: 10.20.1.4  30.102 ms  reached
 ```
 
-**No intermediate VNRA hops.** The managed VNRA hardware forwards packets without decrementing TTL—it is invisible to traceroute. This is the definitive proof of hardware-based forwarding and a key distinguisher from VM NVA designs.
-
----
-
-## Why Both Flags Matter
-
-### `allowForwardedTraffic=true`
-
-Permits traffic forwarded *from* the remote VNet. Essential for spoke-to-hub-to-spoke topologies where a hub appliance (VNRA, firewall, NVA) processes traffic from both ends.
-
-### `allowVirtualNetworkAccess=true`
-
-Permits any traffic *to* the remote VNet's address space. This is the baseline requirement—without it, the SDN fabric does not allow communication between the peered VNets, regardless of routing or forwarding intent.
-
-**Lesson:** For VNRA transit across peerings, **both flags are required on every peering leg in both directions.** Setting only `allowForwardedTraffic=true` leaves the peering Connected/FullyInSync but silently drops all data-plane traffic.
+**One tracepath hop to the remote spoke is the definitive proof of managed VNRA forwarding.** Hardware-based forwarding does not decrement TTL, so the two intermediate VNRAs are invisible to traceroute. A VM NVA would appear as hops at 10.1.0.4 and 10.2.0.4. Their absence proves managed hardware is forwarding the traffic — not that VNRA was bypassed.
 
 ---
 
 ## The Observability Ceiling
 
-The validation process proceeded through five structured probes. Stages S2 and S5 represent empirical unknowns that had to be confirmed in the lab:
+Diagnosing managed VNRA requires knowing which surfaces exist and which don't. The validated probe sequence — from baseline non-transitivity through the effective-route gap — maps out what is and is not programmatically accessible:
 
 ```mermaid
 graph TD
     S1["S1: Baseline Non-Transitivity<br/>(no route tables)<br/>Expected: Ping FAIL"]
-    S2["S2: VNRA Transit Proof<br/>(E1 chaining, route tables)<br/>Expected: Ping PASS, no VNRA hops in traceroute"]
+    S2["S2: VNRA Transit Proof<br/>(UDR chaining, route tables applied)<br/>Expected: Ping PASS, no VNRA hops in traceroute"]
     S3["S3: rt-spoke1 and rt-spoke2<br/>Effective Routes<br/>Expected: UDR entries visible"]
     S4["S4: rt-hub1-vnra and rt-hub2-vnra<br/>Configured Routes<br/>Expected: Cross-hub routes listed"]
-    S5["S5: VNRA Resource Effective Routes<br/>(E2 Empirical)<br/>Expected: 404 or no API as of 2026-08-19"]
+    S5["S5: VNRA Resource Effective Routes<br/>(Empirical: no documented API)<br/>Expected: HTTP 404"]
 
     S1 -->|Pass S1| S2
     S2 -->|Pass S2| S3
@@ -221,134 +282,105 @@ graph TD
     style S5 fill:#fff9c4,stroke:#ff6f00,stroke-width:2px
 ```
 
-Managed VNRA exposes a narrower set of diagnostics than VM NVA:
-
 | Observable | Available | Method |
 |---|---|---|
 | **Configured UDR routes** | ✅ YES | `az network route-table route list` |
 | **Effective routes on spoke VM NIC** | ✅ YES | `az network nic show-effective-route-table` |
-| **Effective routes on VNRA subnet** | ❌ NO | Subnet action returns HTTP 404 |
+| **Effective routes on VNRA subnet** | ❌ NO | HTTP 404 from regional backend |
 | **VNRA resource state + IPs** | ✅ YES | `az rest GET .../virtualNetworkAppliances/vnra1` |
-| **Azure Monitor metrics (no diag config)** | ✅ YES | `az monitor metrics list` (8 metrics available) |
-| **Network Watcher next-hop (spoke perspective)** | ✅ YES | `az network watcher show-next-hop` |
-| **Network Watcher next-hop (VNRA forwarding context)** | ❌ NO | Source-IP enforcement prevents proxy |
-| **VNet flow logs** | ❌ NO | Not supported on VNRA subnet |
-| **Traceroute hop visibility** | ❌ NO | Hardware forwarding is TTL-invisible |
+| **Azure Monitor metrics** | ✅ YES | 8 metrics including BytesSent/BytesReceived/PacketsSent/PacketsReceived |
+| **Network Watcher next-hop (spoke perspective)** | ✅ YES | `az network watcher show-next-hop` with spoke VM as source |
+| **Network Watcher next-hop (VNRA as source)** | ❌ NO | Source IP enforcement prevents using VNRA as the probe source |
+| **VNet flow logs on VNRA subnet** | ❌ NO | Not supported |
+| **Traceroute hop visibility at VNRA IPs** | ❌ NO | Hardware forwarding is TTL-invisible |
 
-### The Gap: No Subnet-Scope Effective Route API
+### The Effective-Route Gap
 
-POST to `VirtualNetworkApplianceSubnet/effectiveRouteTable` and `VirtualNetworkApplianceSubnet/listEffectiveRoutes` both return **HTTP 404** from the regional backend. There is no programmatic way to inspect what the VNRA sees—you can only observe the spoke VM NICs and the configured UDR tables.
+Both `VirtualNetworkApplianceSubnet/effectiveRouteTable` and `VirtualNetworkApplianceSubnet/listEffectiveRoutes` return HTTP 404. There is no programmatic way to ask the VNRA what routes it sees on its subnet.
 
-**Workaround:** Spoke VM NIC effective routes indirectly show what the hub has learned. Cross-check against configured UDRs and Azure Monitor metrics to infer VNRA behavior.
+**Indirect workaround:** Spoke VM NIC effective routes indirectly reflect what the hub has learned. Cross-checking spoke NIC effective routes against configured UDR tables, combined with Azure Monitor `BytesReceived`/`BytesSent`, provides a reasonable proxy for VNRA internal routing state.
+
+**Network Watcher limitation:** Network Watcher's Next Hop tool cannot use a VNRA IP as the source — source IP enforcement rejects it. You can probe *to* the VNRA from a spoke VM, but not *through* it programmatically.
 
 ---
 
-## Undocumented Details
+## Undocumented Details (as of August 2026)
 
-**5-IP reservation per VNRA:** Each managed VNRA reserves 5 consecutive IPs from its subnet (primary + 4 secondary). A 50 Gbps VNRA in 10.1.0.0/24 consumed 10.1.0.4–10.1.0.8. This is not documented in GA docs as of August 2026.  
-**Impact:** A /28 subnet can fit 2 VNRAs (10 IPs usable); a /29 cannot fit one. Use /24 for production.
+**5-IP reservation per VNRA:** Each managed VNRA reserves 5 consecutive IPs from its subnet (primary + 4 secondary). A 50 Gbps VNRA placed at 10.1.0.0/24 will occupy 10.1.0.4–10.1.0.8. This is not in GA documentation. Impact: a /28 fits 2 VNRAs; a /29 cannot fit one. Use /24 for production.
 
-**No CLI subcommand:** `az network` has no `routing-appliance` subcommand. VNRA creation requires `az rest` or Terraform (AzAPI provider only).
+**No CLI subcommand:** `az network` has no `routing-appliance` subcommand as of August 2026. Creation requires `az rest --method PUT` or Terraform with the AzAPI provider. No `az network vnet-appliance` or equivalent.
 
-**API schema:** GA schema uses `properties.bandwidthInGbps: "50"` (string), **not** the preview `virtualNetworkApplianceSku.scalingBandwidth` shape.
+**GA API schema:** Use `properties.bandwidthInGbps: "50"` (string value). The preview schema property `virtualNetworkApplianceSku.scalingBandwidth` is not valid in the GA API (`2025-05-01`).
 
-**Pricing ambiguous:** The retail Prices API returns no unambiguous SKU match for 50 Gbps. Estimated cost: $33–$170/day (pending official pricing docs).
+**Pricing ambiguous:** The Azure Retail Prices API returns no unambiguous match for managed VNRA at 50 Gbps. Estimated operational cost: $33–$170/day per appliance (two appliances in this topology). Verify against current official docs before production budgeting.
 
 ---
 
 ## Reproduction Commands
 
-### 1. Create VNRAs via REST API
+### Create a VNRA via REST API
 
 ```bash
-# VNRA1 in hub1-vnet
 az rest --method PUT \
-  --url "https://management.azure.com/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-dual-hub-vnra-udr-transit/providers/Microsoft.Network/virtualNetworkAppliances/vnra1?api-version=2025-05-01" \
-  --body @- <<'EOF'
-{
-  "location": "swedencentral",
-  "properties": {
-    "bandwidthInGbps": "50",
-    "subnet": {
-      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-dual-hub-vnra-udr-transit/providers/Microsoft.Network/virtualNetworks/hub1-vnet/subnets/VirtualNetworkApplianceSubnet"
+  --url "https://management.azure.com/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG>/providers/Microsoft.Network/virtualNetworkAppliances/vnra1?api-version=2025-05-01" \
+  --body '{
+    "location": "swedencentral",
+    "properties": {
+      "bandwidthInGbps": "50",
+      "subnet": {
+        "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG>/providers/Microsoft.Network/virtualNetworks/hub1-vnet/subnets/VirtualNetworkApplianceSubnet"
+      }
     }
-  },
-  "tags": {
-    "lab": "true",
-    "created_by": "copilot-lab"
-  }
-}
-EOF
+  }'
 ```
 
-### 2. Verify Peering Flags on All Six Legs
+### Verify All Six Peering Legs
 
 ```bash
-# Check hub1-spoke1 peering
+# Run for each of: hub1/hub1-to-spoke1, hub1/hub1-to-hub2, hub2/hub2-to-spoke2,
+# spoke1/spoke1-to-hub1, spoke2/spoke2-to-hub2, hub2/hub2-to-hub1
 az network vnet peering show \
-  --resource-group rg-dual-hub-vnra-udr-transit \
-  --vnet-name hub1-vnet \
-  --name hub1-to-spoke1 \
+  --resource-group <rg> \
+  --vnet-name <vnet-name> \
+  --name <peering-name> \
   --query "{allowVirtualNetworkAccess: allowVirtualNetworkAccess, allowForwardedTraffic: allowForwardedTraffic, state: peeringState}"
-
-# If either flag is false or missing, correct it:
-az network vnet peering update \
-  --resource-group rg-dual-hub-vnra-udr-transit \
-  --vnet-name hub1-vnet \
-  --name hub1-to-spoke1 \
-  --set allowVirtualNetworkAccess=true allowForwardedTraffic=true
 ```
 
-### 3. Test Transit (Post-Fix)
+### Test Transit
 
 ```bash
-# From test1-vm (swedencentral)
+# Forward path (swedencentral → northeurope)
 az vm run-command invoke \
-  --resource-group rg-dual-hub-vnra-udr-transit \
-  --name test1-vm \
-  --command-id RunShellScript \
-  --scripts "ping -c 10 10.20.1.4"
+  --resource-group <rg> --name test1-vm \
+  --command-id RunShellScript --scripts "ping -c 10 10.20.1.4"
 
-# From test2-vm (northeurope)
+# Return path (northeurope → swedencentral)
 az vm run-command invoke \
-  --resource-group rg-dual-hub-vnra-udr-transit \
-  --name test2-vm \
-  --command-id RunShellScript \
-  --scripts "ping -c 10 10.10.1.4"
-```
-
-### 4. Verify VNRA Metrics
-
-```bash
-# Check bytes forwarded by VNRA1
-az monitor metrics list \
-  --resource-group rg-dual-hub-vnra-udr-transit \
-  --resource vnra1 \
-  --resource-type "Microsoft.Network/virtualNetworkAppliances" \
-  --metric BytesSent BytesReceived \
-  --start-time 2026-08-19T00:00:00Z \
-  --end-time 2026-08-19T23:59:59Z
+  --resource-group <rg> --name test2-vm \
+  --command-id RunShellScript --scripts "ping -c 10 10.10.1.4 && tracepath 10.10.1.4"
 ```
 
 ---
 
-## Design Lessons
+## Design Checklist
 
-1. **Always verify `allowVirtualNetworkAccess=true`** on every peering leg before testing hub-spoke UDR scenarios. The flag defaults can vary by creation method (CLI, Portal, Terraform, ARM); always verify explicitly post-creation.
+Before considering a VNRA multi-region transit topology production-ready:
 
-2. **Managed VNRA is hardware-based, not software.** You cannot SSH into it, inspect routes via `ip route`, or use `tcpdump`. Plan your observability around spoke VM NICs, Azure Monitor metrics, and end-to-end tests. Effective-route visibility on the VNRA subnet is not available.
+1. **Verify both peering flags on every leg, post-provisioning.** Do not rely on provisioning tool defaults. Check `allowVirtualNetworkAccess` AND `allowForwardedTraffic` explicitly with `az network vnet peering show` after every deployment and update. A peering showing `Connected/FullyInSync` provides no guarantee either flag is set correctly.
 
-3. **TTL invisibility is a feature, not a bug.** Managed VNRA hardware forwards without decrementing TTL—it appears transparent in tracepath. This distinguishes it from VM NVA and allows deterministic hop counting in multi-stage forwarding chains.
+2. **Plan observability around the gaps.** There is no subnet-scope effective-route API. Build your diagnostics around spoke VM NIC effective routes, Azure Monitor metrics (BytesSent/BytesReceived), Network Watcher next-hop from spoke VMs, and end-to-end ICMP tests. Traceroute hop counts and TTL behavior will differ from VM NVA — absence of a hop at the VNRA IP is correct behavior, not a skip.
 
-4. **VNRA subnet isolation:** The `VirtualNetworkApplianceSubnet` is managed by Azure. NSGs are created automatically with default allow rules. Do not try to co-locate other resources (VMs, etc.) in this subnet—stick to VNRA instances only.
+3. **Size subnets for 5-IP-per-VNRA reservation.** A `VirtualNetworkApplianceSubnet` of /28 supports 2 VNRAs (10 IPs usable). /29 cannot support any. Use /24 for single-VNRA production deployments to leave headroom.
 
-5. **Test peering flags post-creation, even if using Terraform or ARM templates.** The conditional application of these flags by different provisioning tools is still inconsistent. A simple `az network vnet peering show` followed by `az network vnet peering update` on all six peering objects is your safety net.
+4. **VNRA subnet is managed by Azure.** NSGs are auto-created with default allow rules. Do not place other resources (VMs, NICs, etc.) in `VirtualNetworkApplianceSubnet`.
+
+5. **No ILB in front of VNRA.** Unlike VM NVA, managed VNRA does not support an Internal Load Balancer in the path. Do not design the UDR next-hop as an ILB frontend IP.
 
 ---
 
 ## Takeaway
 
-Managed VNRA enables transparent, multi-region transit at 50+ Gbps without deploying and managing a Linux VM NVA. **The control plane is straightforward; the data plane is not.** Two mandatory peering flags (`allowVirtualNetworkAccess=true` AND `allowForwardedTraffic=true`) must be explicitly verified on every peering leg in both directions. Miss one, and your entire topology silently fails. Get both right, and you have a production-ready, TTL-invisible forwarding path that scales beyond the throughput constraints of VM-based appliances.
+Managed VNRA delivers transparent cross-region forwarding at hardware speeds — TTL-invisible, no OS patching, no cloud-init. The design is straightforward once the route table chain is correct. The operational complexity lies in two areas: verifying that both VNet peering flags are explicitly true on every leg (the control plane will not tell you when they are not), and working around a narrower diagnostic surface than VM NVA provides. Both are manageable with the verification and indirect-diagnostics approach described above.
 
 ---
 
@@ -356,13 +388,14 @@ Managed VNRA enables transparent, multi-region transit at 50+ Gbps without deplo
 
 **Validation artifacts:** [net-lab-builder/labs/dual-hub-vnra-udr-transit](https://github.com/erjosito/net-lab-builder/tree/main/labs/dual-hub-vnra-udr-transit)
 
-- Pre-fix failure: `show-output/validation/retry-20260819T185118+0200/06-test1-to-test2.json` (100% loss)
-- Root cause: `show-output/validation/retry-20260819T185118+0200/04-peerings-hub1.json` (allowVirtualNetworkAccess=false)
-- Peering fix: `show-output/validation/retry-20260819T185118+0200/10-peering-access-correction.json`
-- Post-fix success: `show-output/validation/retry-20260819T185118+0200/12-after-fix-test1-to-test2.json` (0% loss, 33 ms)
+- Transit failure evidence: `show-output/validation/retry-20260819T185118+0200/06-test1-to-test2.json` (100% loss, `allowVirtualNetworkAccess=false`)
+- Peering audit: `show-output/validation/retry-20260819T185118+0200/04-peerings-hub1.json`
+- Peering correction: `show-output/validation/retry-20260819T185118+0200/10-peering-access-correction.json`
+- Transit success: `show-output/validation/retry-20260819T185118+0200/12-after-fix-test1-to-test2.json` (0% loss, 33 ms)
+- Effective-route 404: `show-output/validation/s5-a1-subnet-effectiveRouteTable.txt`
 - Lessons learned: `lessons-learned.md` (L1–L11)
 
-The lab creates and then tears down a predictable set of resources. Understanding the dependency chain clarifies which resources exist, the order they must be cleaned up, and why VNRA deletion must precede VNet deletion:
+The lab resource set and its deletion dependency chain — useful if reproducing or adapting this topology:
 
 ```mermaid
 graph TD

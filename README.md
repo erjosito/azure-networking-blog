@@ -1,4 +1,4 @@
-# Azure Networking Blog
+﻿# Azure Networking Blog
 
 Hands-on diagnostics, gotchas, and field findings from deploying and troubleshooting Azure Networking labs.
 
@@ -6,7 +6,7 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
-- **[2026-08] Managed VNRA Multi-Region UDR Transit: The Silent Peering Trap**: Diagnosing a silent peering trap that drops managed VNRA cross-region transit
+- **[2026-08] Azure Managed VNRA: Multi-Region Transit Design, Observability Limits, and the Two Peering Prerequisites**: Validated cross-region UDR transit via managed VNRA — design, route table chain, the two peering flags that silently govern data-plane reachability, and the diagnostic surfaces available on hardware-based appliances
   - [Read post](./dual-hub-vnra-udr-transit/)
 
 - **[2026-08] Are Azure public, service, and private endpoints equally fast?**: An equivalence benchmark with correctness controls and sensitivity calibration
