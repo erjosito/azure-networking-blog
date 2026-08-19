@@ -6,6 +6,9 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
+- **[2026-08] Managed VNRA Multi-Region UDR Transit: The Silent Peering Trap**: Diagnosing a silent peering trap that drops managed VNRA cross-region transit
+  - [Read post](./dual-hub-vnra-udr-transit/)
+
 - **[2026-08] Are Azure public, service, and private endpoints equally fast?**: An equivalence benchmark with correctness controls and sensitivity calibration
   - [Read post](./2026-08-storage-endpoint-path-equivalence/)
 - **[2026-06] Three blind spots in the ExpressRoute DR guide**: How secured vWAN, partner-managed CEs, and vWAN route maps change ExpressRoute DR path engineering
@@ -16,3 +19,4 @@ The following posts have been dynamically generated with GitHub Copilot CLI and 
 ---
 
 *Each post lives in its own date-prefixed folder. Clone, explore, and reproduce.*
+
