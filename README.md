@@ -6,7 +6,7 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
-- **[2026-08] Azure Managed VNRA: Multi-Region Transit Design, Observability Limits, and the Two Peering Prerequisites**: Validated cross-region UDR transit via managed VNRA — design, route table chain, the two peering flags that silently govern data-plane reachability, and the diagnostic surfaces available on hardware-based appliances
+- **[2026-08] Multi-Region UDR Transit with Azure Managed VNRA: Design Guide and Observability Model**: Validated cross-region hub-spoke-VNRA topology, complete UDR chain, the narrower diagnostic surface of managed hardware, and TTL-invisible forwarding as a verification signal
   - [Read post](./dual-hub-vnra-udr-transit/)
 
 - **[2026-08] Are Azure public, service, and private endpoints equally fast?**: An equivalence benchmark with correctness controls and sensitivity calibration
