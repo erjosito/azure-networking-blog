@@ -84,42 +84,9 @@ The lab uses two peered VNets in Sweden Central. No VPN gateway. DNS Private Res
 
 The diagram below shows the full topology. Notice that **both** the data proxy and the Micro VM NIC are inside the same `AgentSubnet` (192.168.0.0/24). The VNet peering is the single data-plane bridge between Foundry's managed compute and the tool target VMs.
 
-```mermaid
-flowchart TB
-    classDef platform fill:#ddf,stroke:#44a
-    classDef foundrynet fill:#e8f4f8,stroke:#1e88e5
-    classDef toolsnet fill:#e8f8e8,stroke:#2e7d32
-    classDef dns fill:#fff8e1,stroke:#f57f17
+![Lab topology: vnet-foundry (192.168.0.0/16) peered to vnet-tools (10.1.0.0/16). AgentSubnet (192.168.0.0/24, delegated to Microsoft.App/environments) hosts both the data proxy (prompt agent, src_ip 192.168.0.x) and Micro VM NIC (hosted agent, src_ip 192.168.0.y). DNS Outbound EP (192.168.3.20) SNATs to pool 192.168.3.21-25 before forwarding to dnsmasq on vm-tools-echo.](assets/01-peered-tools-topology.png)
 
-    subgraph MSFT["Foundry Platform -- Microsoft-managed"]
-        FE["Foundry endpoint<br/>account.services.ai.azure.com"]:::platform
-        TS["Tools Service"]:::platform
-        DP["Data Proxy<br/>AgentSubnet 192.168.0.x"]:::platform
-        MV["Micro VM NIC<br/>AgentSubnet 192.168.0.y<br/>hosted agent only"]:::platform
-        FE --> TS --> DP
-        FE --> MV
-    end
-
-    subgraph VF["vnet-foundry  192.168.0.0/16  swedencentral"]
-        AS["AgentSubnet 192.168.0.0/24<br/>delegated: Microsoft.App/environments"]:::foundrynet
-        PE["PESubnet /24<br/>Foundry private endpoints"]:::foundrynet
-        MG["MgmtSubnet /27<br/>vm-diag  192.168.2.4"]:::foundrynet
-        DO["DNS Outbound EP<br/>192.168.3.20<br/>SNAT pool 192.168.3.21-25"]:::dns
-        DI["DNS Inbound EP<br/>192.168.3.4"]:::dns
-    end
-
-    subgraph VT["vnet-tools  10.1.0.0/16  swedencentral"]
-        EV["vm-tools-echo  10.1.100.4<br/>EchoSubnet 10.1.100.0/24<br/>nginx echo + dnsmasq :53"]:::toolsnet
-        CV["vm-tools-ctrl  10.1.200.4<br/>CtrlSubnet 10.1.200.0/24<br/>nginx echo"]:::toolsnet
-    end
-
-    VF <-->|"VNet peering -- bidirectional<br/>10.1.0.0/16 -- allowed"| VT
-    DP -->|"prompt tool calls  ports 80/443"| EV
-    DP -->|"prompt tool calls  ports 80/443"| CV
-    MV -->|"hosted code calls<br/>Micro VM NIC egress"| EV
-    MV -->|"hosted code calls<br/>Micro VM NIC egress"| CV
-    DO -->|"tools.lab forward  UDP/TCP 53"| EV
-```
+*[SVG](assets/01-peered-tools-topology.svg) · [Excalidraw source](assets/01-peered-tools-topology.excalidraw) · [Mermaid source](assets/01-peered-tools-topology.mmd)*
 
 **Subnet map:**
 
@@ -139,29 +106,9 @@ flowchart TB
 
 The diagram below compares the three egress paths side by side. Paths 1 and 2 both terminate at the data proxy before reaching the tool server — the agent's code and the caller are not in the data path. Path 3 (hosted direct code) is where your Python runs in the data path.
 
-```mermaid
-flowchart LR
-    classDef client fill:#e3f2fd,stroke:#1565c0
-    classDef proxy fill:#ddf,stroke:#44a
-    classDef microvm fill:#fff8e1,stroke:#f57f17
-    classDef target fill:#e8f8e8,stroke:#2e7d32
+![Three egress paths: Path 1 (prompt agent) — caller to Tools Service to data proxy to tool server (src_ip 192.168.0.x, baseline evidence). Path 2 (hosted agent Toolbox) — caller to Micro VM to data proxy to tool server. Path 3 (hosted agent direct Python code, confirmed) — caller to Micro VM (requests.get) directly to tool server; src_ip 192.168.0.y changes per invocation.](assets/03-agent-egress-paths.png)
 
-    subgraph PATH1["Path 1 -- Prompt agent OpenAPI tool call (baseline evidence)"]
-        PA["Caller invokes<br/>prompt agent"]:::client --> TS1["Foundry Tools Service"]:::proxy --> DP1["Data Proxy<br/>src_ip = 192.168.0.x"]:::proxy
-    end
-
-    subgraph PATH2["Path 2 -- Hosted agent toolbox call (advanced)"]
-        HA_TB["Caller invokes<br/>hosted agent"]:::client --> MV_TB["Micro VM<br/>Toolbox SDK call"]:::microvm --> DP2["Data Proxy<br/>src_ip = 192.168.0.x<br/>same as Path 1"]:::proxy
-    end
-
-    subgraph PATH3["Path 3 -- Hosted agent direct Python code (confirmed)"]
-        HA_DC["Caller invokes<br/>hosted agent"]:::client --> MV_DC["Micro VM<br/>requests.get in main.py<br/>src_ip = 192.168.0.y"]:::microvm
-    end
-
-    DP1 -->|"HTTP port 80"| ECHO["vm-tools-echo<br/>10.1.100.4"]:::target
-    DP2 -->|"HTTP port 80"| ECHO
-    MV_DC -->|"HTTP Micro VM NIC egress<br/>src_ip differs per invocation"| ECHO
-```
+*[SVG](assets/03-agent-egress-paths.svg) · [Excalidraw source](assets/03-agent-egress-paths.excalidraw) · [Mermaid source](assets/03-agent-egress-paths.mmd)*
 
 ### Path 1 — Invocation ingress: Caller to Foundry endpoint
 
@@ -264,34 +211,9 @@ All resources in `vnet-foundry` — data proxy, Micro VM NICs, and `vm-diag` —
 
 The diagram below shows the resolution chain for all caller contexts. The data proxy, Micro VM NIC, and `vm-diag` all converge at the same outbound endpoint and dnsmasq sees an undifferentiated source from the SNAT pool.
 
-```mermaid
-flowchart TD
-    classDef client fill:#e3f2fd,stroke:#1565c0
-    classDef azuredns fill:#ede7f6,stroke:#4527a0
-    classDef resolver fill:#fff8e1,stroke:#f57f17
-    classDef dnsmasq fill:#e8f8e8,stroke:#2e7d32
-    classDef privzone fill:#fce4ec,stroke:#880e4f
-    classDef finding fill:#f1f8e9,stroke:#33691e,stroke-dasharray:4 2
+![DNS resolution chain. All VNet callers (data proxy, Micro VM NIC, vm-diag) query Azure DNS 168.63.129.16. Forwarding ruleset routes tools.lab to DNS Outbound EP 192.168.3.20; SNAT pool 192.168.3.21-25 hides original caller at dnsmasq. Private DNS zone resolves Foundry endpoint to PESubnet IP. Workstation outside VNet receives getaddrinfo failure — NXDOMAIN for tools.lab.](assets/04-dns-resolution-contexts.png)
 
-    subgraph C1C3["Data proxy or Micro VM NIC  --  vm-diag (all inside VNet)"]
-        DP_Q["Data Proxy 192.168.0.x or Micro VM NIC 192.168.0.y<br/>OR vm-diag 192.168.2.4"]:::client
-    end
-    subgraph WS["Outside VNet -- client-side function calling"]
-        WS_Q["Workstation (public IP)"]:::client
-    end
-
-    AZDNS["Azure DNS  168.63.129.16<br/>VNet-internal resolver"]:::azuredns
-
-    DP_Q -->|"DNS query tools.lab"| AZDNS
-    WS_Q -->|"DNS query tools.lab NXDOMAIN<br/>resolver not reachable outside VNet"| WS_FAIL["getaddrinfo FAILED<br/>[Errno 11001] -- observed"]
-
-    AZDNS -->|"Forwarding ruleset<br/>tools.lab -> 192.168.3.20"| OEP["DNS Outbound EP  192.168.3.20<br/>SNAT pool 192.168.3.21-25"]:::resolver
-    AZDNS -->|"Private zone match<br/>privatelink.services.ai.azure.com"| PZ["Private DNS Zone<br/>A -> 192.168.1.x  PESubnet"]:::privzone
-
-    OEP -->|"Forward to dnsmasq  10.1.100.4:53"| DM["dnsmasq on vm-tools-echo<br/>echo.tools.lab -> 10.1.100.4<br/>ctrl.tools.lab -> 10.1.200.4"]:::dnsmasq
-
-    FINDING["Confirmed: dnsmasq sees 192.168.3.21-25 for ALL VNet callers<br/>-- data proxy, Micro VM NIC, vm-diag<br/>DNS is context-transparent; agent type not distinguishable by DNS source IP"]:::finding
-```
+*[SVG](assets/04-dns-resolution-contexts.svg) · [Excalidraw source](assets/04-dns-resolution-contexts.excalidraw) · [Mermaid source](assets/04-dns-resolution-contexts.mmd)*
 
 ### Same peering and routing model
 
@@ -495,51 +417,9 @@ resp = oai_std.responses.create(
 
 The invocation diagram maps the full client-to-agent flow, including RBAC and private DNS. Notice the split between the public path and the private path via private endpoint:
 
-```mermaid
-flowchart LR
-    classDef client fill:#e3f2fd,stroke:#1565c0
-    classDef deploy fill:#f3e5f5,stroke:#6a1b9a
-    classDef private fill:#e8f4f8,stroke:#1e88e5
-    classDef foundry fill:#ddf,stroke:#44a
-    classDef target fill:#e8f8e8,stroke:#2e7d32
-    classDef rbac fill:#fff8e1,stroke:#f57f17,stroke-dasharray:4 2
+![Client invocation paths. Public path: workstation uses public DNS to reach Foundry endpoint directly. Private path: vm-diag (192.168.2.4) resolves via private DNS zone to PE IP (PESubnet 192.168.1.x), then HTTPS to private endpoint. Deploy surface: VS Code Foundry Toolkit or azd ai agent deploy uploads source-ZIP. Foundry spawns Micro VM in AgentSubnet (192.168.0.y). Micro VM calls echo.tools.lab and ctrl.tools.lab via VNet peering. Foundry Agent Consumer RBAC required on invoking identity.](assets/06-programmatic-invocation.png)
 
-    subgraph DEPLOY["Deploy -- VS Code Foundry Toolkit or azd"]
-        AZD["azd ai agent deploy<br/>source-ZIP upload"]:::deploy
-    end
-
-    subgraph INVOKE_PUB["Invoke -- public path (workstation)"]
-        JW["Workstation  public IP"]:::client
-        PubDNS["Public DNS -> account public IP"]:::client
-    end
-
-    subgraph INVOKE_PRIV["Invoke -- private path (vm-diag in MgmtSubnet)"]
-        VMDIAG["vm-diag  192.168.2.4<br/>AIProjectClient SDK"]:::private
-        PE["Private endpoint<br/>PESubnet 192.168.1.x"]:::private
-        PZ["Private DNS zone<br/>privatelink.services.ai.azure.com"]:::private
-    end
-
-    subgraph FOUNDRY["Foundry -- hosted agent runtime"]
-        FA["Foundry endpoint<br/>account.services.ai.azure.com"]:::foundry
-        MV_RT["Micro VM  echo-probe-agent<br/>AgentSubnet 192.168.0.y"]:::foundry
-    end
-
-    subgraph EGRESS["Agent egress (VNet peering)"]
-        EV["vm-tools-echo  10.1.100.4"]:::target
-        CV["vm-tools-ctrl  10.1.200.4"]:::target
-    end
-
-    RBAC["Foundry Agent Consumer<br/>role at project scope"]:::rbac
-
-    AZD -->|"deploy source-ZIP"| FA
-    JW --> PubDNS --> FA
-    VMDIAG --> PZ -->|"resolves to PE IP"| VMDIAG
-    VMDIAG -->|"HTTPS via private endpoint"| PE --> FA
-    FA --> MV_RT
-    MV_RT -->|"probe_echo -- echo.tools.lab"| EV
-    MV_RT -->|"probe_ctrl -- ctrl.tools.lab"| CV
-    RBAC -. "enforced on invoking identity" .-> VMDIAG
-```
+*[SVG](assets/06-programmatic-invocation.svg) · [Excalidraw source](assets/06-programmatic-invocation.excalidraw) · [Mermaid source](assets/06-programmatic-invocation.mmd)*
 
 ---
 

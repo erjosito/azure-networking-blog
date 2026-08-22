@@ -1,0 +1,39 @@
+%% diagram-id: 01-peered-tools-topology
+%% lab: foundry-agent-prompt-vs-hosted-networking
+%% topology: T1 -- peered tools VNet (new; no VPN)
+%% scenarios: HS1 HS2 HS3 HS4 HS5
+%% authored: 2026-08-20
+flowchart TB
+    classDef platform fill:#ddf,stroke:#44a
+    classDef foundrynet fill:#e8f4f8,stroke:#1e88e5
+    classDef toolsnet fill:#e8f8e8,stroke:#2e7d32
+    classDef dns fill:#fff8e1,stroke:#f57f17
+
+    subgraph MSFT["Foundry Platform -- Microsoft-managed"]
+        FE["Foundry endpoint<br/>account.services.ai.azure.com"]:::platform
+        TS["Tools Service"]:::platform
+        DP["Data Proxy<br/>AgentSubnet 192.168.0.x"]:::platform
+        MV["Micro VM NIC<br/>AgentSubnet 192.168.0.y<br/>hosted agent only"]:::platform
+        FE --> TS --> DP
+        FE --> MV
+    end
+
+    subgraph VF["vnet-foundry  192.168.0.0/16  swedencentral"]
+        PE["PESubnet /24<br/>Foundry private endpoints"]:::foundrynet
+        MG["MgmtSubnet /27<br/>vm-diag  192.168.2.4"]:::foundrynet
+        DO["DNS Outbound EP<br/>192.168.3.20"]:::dns
+        DI["DNS Inbound EP<br/>192.168.3.4"]:::dns
+        GS["GatewaySubnet /27<br/>EMPTY -- no VPN GW"]:::foundrynet
+    end
+
+    subgraph VT["vnet-tools  10.1.0.0/16  swedencentral"]
+        EV["vm-tools-echo  10.1.100.4<br/>EchoSubnet 10.1.100.0/24<br/>nginx + dnsmasq :53"]:::toolsnet
+        CV["vm-tools-ctrl  10.1.200.4<br/>CtrlSubnet 10.1.200.0/24<br/>nginx echo"]:::toolsnet
+    end
+
+    VF <-->|"VNet peering -- bidirectional<br/>10.1.0.0/16 non-reserved -- allowed"| VT
+    DP -->|"tool calls  ports 80/443"| EV
+    DP -->|"tool calls  ports 80/443"| CV
+    MV -->|"direct code calls<br/>Micro VM NIC egress"| EV
+    DO -->|"tools.lab forward<br/>UDP/TCP 53"| EV
+    MG -.->|"Run Command / SSH"| EV

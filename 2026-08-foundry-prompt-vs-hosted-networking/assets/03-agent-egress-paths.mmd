@@ -1,0 +1,29 @@
+%% diagram-id: 03-agent-egress-paths
+%% lab: foundry-agent-prompt-vs-hosted-networking
+%% topology: T1 -- three egress paths compared
+%% scenarios: HS1 (prompt tool call) HS2 (hosted code call) advanced-HS1 (hosted toolbox tool call)
+%% authored: 2026-08-20
+flowchart LR
+    classDef client fill:#e3f2fd,stroke:#1565c0
+    classDef proxy fill:#ddf,stroke:#44a
+    classDef microvm fill:#fff8e1,stroke:#f57f17
+    classDef target fill:#e8f8e8,stroke:#2e7d32
+    classDef label fill:#f5f5f5,stroke:#999,color:#555
+
+    subgraph PATH1["Path 1 -- Prompt agent OpenAPI tool call (HS1)"]
+        PA["Prompt agent<br/>Foundry endpoint"]:::client --> TS1["Tools Service"]:::proxy --> DP1["Data Proxy<br/>src_ip = 192.168.0.x<br/>data proxy IP"]:::proxy
+    end
+
+    subgraph PATH2["Path 2 -- Hosted agent OpenAPI toolbox tool call (advanced)"]
+        HA_TB["Hosted agent<br/>Foundry endpoint"]:::client --> MV_TB["Micro VM<br/>calls Toolbox SDK"]:::microvm --> DP2["Data Proxy<br/>src_ip = 192.168.0.x<br/>same range as Path 1"]:::proxy
+    end
+
+    subgraph PATH3["Path 3 -- Hosted agent direct Python call (HS2)"]
+        HA_DC["Hosted agent<br/>Foundry endpoint"]:::client --> MV_DC["Micro VM<br/>requests.get directly<br/>src_ip = 192.168.0.y<br/>Micro VM NIC IP"]:::microvm
+    end
+
+    DP1 -->|"HTTP/S<br/>ports 80/443"| ECHO["vm-tools-echo<br/>10.1.100.4<br/>echo.tools.lab"]:::target
+    DP2 -->|"HTTP/S<br/>ports 80/443"| ECHO
+    MV_DC -->|"HTTP/S<br/>Micro VM NIC egress<br/>different src_ip from Paths 1+2"| ECHO
+
+    NOTE["Key finding tested:<br/>Paths 1 and 2 share src_ip range<br/>Path 3 src_ip differs (OQ1 open)"]:::label
