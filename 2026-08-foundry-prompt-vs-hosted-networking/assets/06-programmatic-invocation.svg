@@ -28,7 +28,7 @@
   <text x="30" y="34" class="t title" text-anchor="start"><tspan x="30" dy="0">06 — Programmatic invocation (HS5, C4)</tspan></text>
   <text x="30" y="60" class="t small" text-anchor="start"><tspan x="30" dy="0">Deploy surface (top), public vs private invocation, Foundry runtime, then agent egress.</tspan></text>
   <rect x="30" y="110" width="380" height="160" rx="8" ry="8" fill="transparent" stroke="#5C2D91" stroke-width="2"/>
-  <text x="42" y="132" class="t subtitle" text-anchor="start">Deploy surface — VS Code Foundry Toolkit</text>
+  <text x="42" y="132" class="t subtitle" text-anchor="start">Deploy surface — VS Code Toolkit / azd (source-ZIP)</text>
   <rect x="60" y="150" width="320" height="44" rx="8" ry="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="2"/>
   <text x="220" y="176" class="t lab" text-anchor="middle"><tspan x="220" dy="0" font-weight="700">VS Code Foundry Toolkit — source-ZIP upload</tspan></text>
   <rect x="60" y="210" width="320" height="44" rx="8" ry="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="2"/>
@@ -64,10 +64,11 @@
   <path d="M 670 465 L 980 380" fill="none" stroke="#0078D4" stroke-width="2" marker-end="url(#arrow)"/>
   <rect x="795" y="404.5" width="60" height="20" fill="#FFFFFF" opacity="0.92"/>
   <text x="825" y="416.5" class="t edge" text-anchor="middle"><tspan x="825" dy="0">HTTPS</tspan></text>
-  <path d="M 380 172 L 400 172 L 400 285 L 1020 285 L 1020 350" fill="none" stroke="#5C2D91" stroke-width="2" marker-end="url(#arrow)"/>
-  <path d="M 380 232 L 420 232 L 420 265 L 1100 265 L 1100 350" fill="none" stroke="#5C2D91" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="780" y="275" class="t lab-b" text-anchor="start"><tspan x="780" dy="0">deploy: source-ZIP  ·  azd ai agent deploy</tspan></text>
-  <path d="M 880 200 L 1180 350" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 380 172 L 420 172 L 420 285 L 940 285 L 940 380 L 980 380" fill="none" stroke="#5C2D91" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 380 232 L 440 232 L 440 275 L 935 275 L 935 380 L 980 380" fill="none" stroke="#5C2D91" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="490" y="270" width="290" height="20" fill="#FFFFFF" opacity="0.95"/>
+  <text x="635" y="284" class="t edge" text-anchor="middle" font-weight="700">deploy (source-ZIP upload)</text>
+  <path d="M 880 200 L 925 200 L 925 380 L 980 380" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow)"/>
   <rect x="30" y="560" width="1340" height="200" rx="8" ry="8" fill="transparent" stroke="#107C10" stroke-width="2"/>
   <text x="42" y="582" class="t subtitle" text-anchor="start">Agent egress after invocation</text>
   <rect x="100" y="620" width="500" height="110" rx="8" ry="8" fill="#DFF6DD" stroke="#107C10" stroke-width="2"/>

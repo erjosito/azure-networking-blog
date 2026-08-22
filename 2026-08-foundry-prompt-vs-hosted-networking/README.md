@@ -104,9 +104,9 @@ The diagram below shows the full topology. Notice that **both** the data proxy a
 
 ## 3. The Four Packet Paths
 
-The diagram below compares the three egress paths side by side. Paths 1 and 2 both terminate at the data proxy before reaching the tool server — the agent's code and the caller are not in the data path. Path 3 (hosted direct code) is where your Python runs in the data path.
+The diagram below compares three egress paths side by side. Diagram path 1 (prompt agent data proxy, **BASELINE from sibling lab 2026-08-14**) and diagram path 2 (hosted agent Toolbox routed through the data proxy, **PREDICTED/INFERRED — not tested in this lab**) both terminate at the data proxy before reaching the tool server. Diagram path 3 (hosted agent direct Python code, **CONFIRMED**) is where your Python code executes in the data path.
 
-![Three egress paths: Path 1 (prompt agent) — caller to Tools Service to data proxy to tool server (src_ip 192.168.0.x, baseline evidence). Path 2 (hosted agent Toolbox) — caller to Micro VM to data proxy to tool server. Path 3 (hosted agent direct Python code, confirmed) — caller to Micro VM (requests.get) directly to tool server; src_ip 192.168.0.y changes per invocation.](assets/03-agent-egress-paths.png)
+![Three egress paths. Path 1 (prompt agent, BASELINE — sibling lab 2026-08-14, not re-run here): data proxy src_ip observed at target 192.168.0.49 and 192.168.0.239. Path 2 (hosted agent Toolbox via data proxy, PREDICTED/INFERRED — not tested in this lab): no measured src_ip available; routing through data proxy is inferred from architecture documentation, not empirically confirmed. Path 3 (hosted agent direct Python code, CONFIRMED): Micro VM NIC src_ip changes per invocation — REST runs .238/.28/.110, SDK runs .92/.142/.165, SSE stream .124 (seven successful observations); a fourth REST attempt was NSG-blocked with no src_ip recorded.](assets/03-agent-egress-paths.png)
 
 *[SVG](assets/03-agent-egress-paths.svg) · [Excalidraw source](assets/03-agent-egress-paths.excalidraw) · [Mermaid source](assets/03-agent-egress-paths.mmd)*
 
@@ -463,4 +463,3 @@ The invocation diagram maps the full client-to-agent flow, including RBAC and pr
 See [references.md](references.md) for the full annotated reference list.
 
 **Source lab (public):** [erjosito/net-lab-builder — foundry-agent-prompt-vs-hosted-networking](https://github.com/erjosito/net-lab-builder/tree/main/labs/foundry-agent-prompt-vs-hosted-networking)
-

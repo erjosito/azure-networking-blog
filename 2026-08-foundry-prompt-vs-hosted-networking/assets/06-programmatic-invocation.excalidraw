@@ -91,12 +91,12 @@
       "locked": false,
       "fontSize": 14,
       "fontFamily": 2,
-      "text": "Deploy surface - VS Code Foundry Toolkit",
+      "text": "Deploy surface - VS Code Toolkit / azd (source-ZIP)",
       "textAlign": "left",
       "verticalAlign": "top",
       "baseline": 14,
       "containerId": null,
-      "originalText": "Deploy surface - VS Code Foundry Toolkit",
+      "originalText": "Deploy surface - VS Code Toolkit / azd (source-ZIP)",
       "lineHeight": 1.25
     },
     {

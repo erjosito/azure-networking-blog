@@ -48,8 +48,8 @@
   <rect x="369.5" y="309.5" width="101" height="20" fill="#FFFFFF" opacity="0.92"/>
   <text x="420" y="321.5" class="t edge" text-anchor="middle"><tspan x="420" dy="0">echo.tools.lab</tspan></text>
   <path d="M 340 470 L 500 360" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow)"/>
-  <rect x="343.5" y="397" width="153" height="20" fill="#FFFFFF" opacity="0.92"/>
-  <text x="420" y="409" class="t edge" text-anchor="middle"><tspan x="420" dy="0">account...ai.azure.com</tspan></text>
+  <rect x="343.5" y="425" width="153" height="20" fill="#FFFFFF" opacity="0.92"/>
+  <text x="420" y="437" class="t edge" text-anchor="middle"><tspan x="420" dy="0">account...ai.azure.com</tspan></text>
   <rect x="850" y="170" width="240" height="90" rx="8" ry="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="2"/>
   <text x="970" y="203" class="t lab" text-anchor="middle"><tspan x="970" dy="0" font-weight="700">DNS Outbound EP</tspan><tspan x="970" dy="16">192.168.3.20</tspan><tspan x="970" dy="16">vnet-foundry</tspan></text>
   <rect x="1200" y="170" width="260" height="100" rx="8" ry="8" fill="#DFF6DD" stroke="#107C10" stroke-width="2"/>
