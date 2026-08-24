@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 900" width="1500" height="900" role="img" aria-label="04 — DNS resolution contexts (C1–C4)">
+  <title>04 — DNS resolution contexts (C1–C4)</title>
+  <rect x="0" y="0" width="1500" height="900" fill="#FFFFFF"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e1e1e"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D13438"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0078D4"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#107C10"/>
+    </marker>
+  </defs>
+  <style>
+    .t { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; fill: #000; }
+    .title { font-size: 20px; font-weight: 700; }
+    .subtitle { font-size: 13px; font-weight: 600; fill: #333; }
+    .lab { font-size: 13px; }
+    .lab-b { font-size: 13px; font-weight: 700; }
+    .small { font-size: 11px; fill: #333; }
+    .edge { font-size: 11px; fill: #1e1e1e; }
+    .mono { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 11px; }
+  </style>
+  <text x="30" y="34" class="t title" text-anchor="start"><tspan x="30" dy="0">04 — DNS resolution contexts (C1–C4)</tspan></text>
+  <text x="30" y="60" class="t small" text-anchor="start"><tspan x="30" dy="0">Four query sources fan into Azure DNS, then to the forwarding ruleset or the private DNS zone.</tspan></text>
+  <rect x="30" y="120" width="340" height="110" rx="8" ry="8" fill="transparent" stroke="#0078D4" stroke-width="2"/>
+  <text x="42" y="142" class="t subtitle" text-anchor="start">C1 &amp; C2 — data proxy DNS context</text>
+  <rect x="30" y="260" width="340" height="110" rx="8" ry="8" fill="transparent" stroke="#F7630C" stroke-width="2"/>
+  <text x="42" y="282" class="t subtitle" text-anchor="start">C3 — Micro VM NIC DNS context</text>
+  <rect x="30" y="400" width="340" height="110" rx="8" ry="8" fill="transparent" stroke="#5C2D91" stroke-width="2"/>
+  <text x="42" y="422" class="t subtitle" text-anchor="start">C4 — Programmatic client DNS</text>
+  <rect x="60" y="162" width="280" height="56" rx="8" ry="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="2"/>
+  <text x="200" y="194" class="t lab" text-anchor="middle"><tspan x="200" dy="0" font-weight="700">Data Proxy — 192.168.0.x</tspan></text>
+  <rect x="60" y="302" width="280" height="56" rx="8" ry="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="2"/>
+  <text x="200" y="334" class="t lab" text-anchor="middle"><tspan x="200" dy="0" font-weight="700">Micro VM NIC — 192.168.0.y</tspan></text>
+  <rect x="60" y="442" width="280" height="56" rx="8" ry="8" fill="#CFE4FA" stroke="#0078D4" stroke-width="2"/>
+  <text x="200" y="474" class="t lab" text-anchor="middle"><tspan x="200" dy="0" font-weight="700">vm-diag — 192.168.2.4</tspan></text>
+  <rect x="500" y="270" width="260" height="110" rx="8" ry="8" fill="#CFE4FA" stroke="#0078D4" stroke-width="2"/>
+  <text x="630" y="313" class="t lab" text-anchor="middle"><tspan x="630" dy="0" font-weight="700">Azure DNS</tspan><tspan x="630" dy="16">168.63.129.16</tspan><tspan x="630" dy="16">VNet-internal resolver</tspan></text>
+  <path d="M 340 190 L 500 290" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="369.5" y="222" width="101" height="20" fill="#FFFFFF" opacity="0.92"/>
+  <text x="420" y="234" class="t edge" text-anchor="middle"><tspan x="420" dy="0">echo.tools.lab</tspan></text>
+  <path d="M 340 330 L 500 325" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="369.5" y="309.5" width="101" height="20" fill="#FFFFFF" opacity="0.92"/>
+  <text x="420" y="321.5" class="t edge" text-anchor="middle"><tspan x="420" dy="0">echo.tools.lab</tspan></text>
+  <path d="M 340 470 L 500 360" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="343.5" y="425" width="153" height="20" fill="#FFFFFF" opacity="0.92"/>
+  <text x="420" y="437" class="t edge" text-anchor="middle"><tspan x="420" dy="0">account...ai.azure.com</tspan></text>
+  <rect x="850" y="170" width="240" height="90" rx="8" ry="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="2"/>
+  <text x="970" y="203" class="t lab" text-anchor="middle"><tspan x="970" dy="0" font-weight="700">DNS Outbound EP</tspan><tspan x="970" dy="16">192.168.3.20</tspan><tspan x="970" dy="16">vnet-foundry</tspan></text>
+  <rect x="1200" y="170" width="260" height="100" rx="8" ry="8" fill="#DFF6DD" stroke="#107C10" stroke-width="2"/>
+  <text x="1330" y="208" class="t lab" text-anchor="middle"><tspan x="1330" dy="0" font-weight="700">dnsmasq on vm-tools-echo</tspan><tspan x="1330" dy="16">echo.tools.lab A 10.1.100.4</tspan><tspan x="1330" dy="16">ctrl.tools.lab A 10.1.200.4</tspan></text>
+  <path d="M 760 290 L 850 215" fill="none" stroke="#0078D4" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="722" y="234.5" width="166" height="34" fill="#FFFFFF" opacity="0.92"/>
+  <text x="805" y="246.5" class="t edge" text-anchor="middle"><tspan x="805" dy="0">Matches ruleset</tspan><tspan x="805" dy="14">tools.lab → 192.168.3.20</tspan></text>
+  <path d="M 1090 215 L 1200 220" fill="none" stroke="#107C10" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="1081.5" y="187.5" width="127" height="34" fill="#FFFFFF" opacity="0.92"/>
+  <text x="1145" y="199.5" class="t edge" text-anchor="middle"><tspan x="1145" dy="0">Forward UDP/TCP 53</tspan><tspan x="1145" dy="14">→ dnsmasq</tspan></text>
+  <rect x="850" y="380" width="340" height="100" rx="8" ry="8" fill="#CFE4FA" stroke="#0078D4" stroke-width="2"/>
+  <text x="1020" y="418" class="t lab" text-anchor="middle"><tspan x="1020" dy="0" font-weight="700">Private DNS Zone</tspan><tspan x="1020" dy="16">privatelink.services.ai.azure.com</tspan><tspan x="1020" dy="16">A → 192.168.1.x PESubnet</tspan></text>
+  <path d="M 760 360 L 850 430" fill="none" stroke="#0078D4" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="722" y="377" width="166" height="20" fill="#FFFFFF" opacity="0.92"/>
+  <text x="805" y="389" class="t edge" text-anchor="middle"><tspan x="805" dy="0">Matches privatelink zone</tspan></text>
+  <rect x="30" y="560" width="1340" height="130" rx="8" ry="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="2"/>
+  <text x="50" y="594" class="t lab" text-anchor="start"><tspan x="50" dy="0" font-weight="700">Key finding:</tspan><tspan x="50" dy="20">• dnsmasq sees query source from 192.168.3.21–25 (DNSOutboundSubnet SNAT pool) — not the fixed .20 EP address.</tspan><tspan x="50" dy="20">• Same source pool observed in C1, C2, and C3, so DNS traffic alone cannot distinguish agent type.</tspan><tspan x="50" dy="20">• Observable differentiator between prompt vs hosted-direct is HTTP TCP src_ip (see diagram 03), not DNS.</tspan></text>
+  <rect x="30" y="720" width="1340" height="110" rx="8" ry="8" fill="transparent" stroke="#495057" stroke-width="2"/>
+  <text x="42" y="742" class="t subtitle" text-anchor="start">Legend</text>
+  <rect x="60" y="780" width="24" height="20" rx="8" ry="8" fill="#E8DAEF" stroke="#5C2D91" stroke-width="2"/>
+  <text x="94" y="795" class="t lab" text-anchor="start"><tspan x="94" dy="0">Data Proxy context (C1, C2)</tspan></text>
+  <rect x="390" y="780" width="24" height="20" rx="8" ry="8" fill="#FFF4CE" stroke="#F7630C" stroke-width="2"/>
+  <text x="424" y="795" class="t lab" text-anchor="start"><tspan x="424" dy="0">Micro VM &amp; DNS resolver EP (C3)</tspan></text>
+  <rect x="720" y="780" width="24" height="20" rx="8" ry="8" fill="#CFE4FA" stroke="#0078D4" stroke-width="2"/>
+  <text x="754" y="795" class="t lab" text-anchor="start"><tspan x="754" dy="0">Programmatic / VNet resolver (C4)</tspan></text>
+  <rect x="1050" y="780" width="24" height="20" rx="8" ry="8" fill="#DFF6DD" stroke="#107C10" stroke-width="2"/>
+  <text x="1084" y="795" class="t lab" text-anchor="start"><tspan x="1084" dy="0">dnsmasq authoritative for tools.lab</tspan></text>
+</svg>
