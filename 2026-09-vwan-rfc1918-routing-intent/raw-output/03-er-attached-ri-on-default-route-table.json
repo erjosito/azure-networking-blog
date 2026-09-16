@@ -1,0 +1,29 @@
+{
+  "associatedConnections": [
+    "/subscriptions/a8fbd8e1-fb5a-4411-804a-4ac80929c93c/resourceGroups/lab-vwan-rfc1918-20260916/providers/Microsoft.Network/expressRouteGateways/ergw-se/expressRouteConnections/conn-er-gcp",
+    "/subscriptions/a8fbd8e1-fb5a-4411-804a-4ac80929c93c/resourceGroups/lab-vwan-rfc1918-20260916/providers/Microsoft.Network/virtualHubs/hub-se/hubVirtualNetworkConnections/conn-spoke-se"
+  ],
+  "etag": "W/\"a9d4b5cd-b087-43b0-ae82-55ec61eacc11\"",
+  "id": "/subscriptions/a8fbd8e1-fb5a-4411-804a-4ac80929c93c/resourceGroups/lab-vwan-rfc1918-20260916/providers/Microsoft.Network/virtualHubs/hub-se/hubRouteTables/defaultRouteTable",
+  "labels": [
+    "default"
+  ],
+  "name": "defaultRouteTable",
+  "propagatingConnections": [],
+  "provisioningState": "Succeeded",
+  "resourceGroup": "lab-vwan-rfc1918-20260916",
+  "routes": [
+    {
+      "destinationType": "CIDR",
+      "destinations": [
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16"
+      ],
+      "name": "_policy_PrivateTrafficPolicy",
+      "nextHop": "/subscriptions/a8fbd8e1-fb5a-4411-804a-4ac80929c93c/resourceGroups/lab-vwan-rfc1918-20260916/providers/Microsoft.Network/azureFirewalls/afw-hub-se",
+      "nextHopType": "ResourceId"
+    }
+  ],
+  "type": "Microsoft.Network/virtualHubs/hubRouteTables"
+}

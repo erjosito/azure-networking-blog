@@ -1,0 +1,12 @@
+GCP 10.20.0.10 -> Azure 172.21.1.10
+PING 172.21.1.10 (172.21.1.10) 56(84) bytes of data.
+64 bytes from 172.21.1.10: icmp_seq=1 ttl=60 time=87.5 ms
+64 bytes from 172.21.1.10: icmp_seq=2 ttl=60 time=98.0 ms
+64 bytes from 172.21.1.10: icmp_seq=3 ttl=60 time=94.4 ms
+64 bytes from 172.21.1.10: icmp_seq=4 ttl=60 time=96.5 ms
+
+--- 172.21.1.10 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 87.450/94.076/97.980/4.033 ms
+
+Connection to 172.21.1.10 22 port [tcp/ssh] succeeded!

@@ -1,0 +1,207 @@
+{
+  "kind": "compute#routerStatusResponse",
+  "result": {
+    "bestRoutes": [
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937,
+              12076
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:58:35.127-07:00",
+        "destRange": "172.20.0.0/23",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeType": "BGP"
+      },
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:37:48.037-07:00",
+        "destRange": "169.254.203.204/30",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeType": "BGP"
+      },
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:37:48.037-07:00",
+        "destRange": "169.254.203.200/30",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeType": "BGP"
+      },
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937,
+              12076
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:58:35.127-07:00",
+        "destRange": "172.21.1.0/24",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeType": "BGP"
+      }
+    ],
+    "bestRoutesForRouter": [
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:37:48.037-07:00",
+        "destRange": "169.254.31.168/29",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeStatus": "ACTIVE",
+        "routeType": "BGP"
+      },
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:37:48.037-07:00",
+        "destRange": "169.254.203.200/30",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeStatus": "ACTIVE",
+        "routeType": "BGP"
+      },
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:37:48.037-07:00",
+        "destRange": "169.254.203.204/30",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeStatus": "ACTIVE",
+        "routeType": "BGP"
+      },
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937,
+              12076
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:58:35.127-07:00",
+        "destRange": "172.20.0.0/23",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeStatus": "ACTIVE",
+        "routeType": "BGP"
+      },
+      {
+        "asPaths": [
+          {
+            "asLists": [
+              133937,
+              12076
+            ],
+            "pathSegmentType": "AS_SEQUENCE"
+          }
+        ],
+        "creationTimestamp": "2026-09-15T21:58:35.127-07:00",
+        "destRange": "172.21.1.0/24",
+        "kind": "compute#route",
+        "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+        "nextHopIp": "169.254.31.170",
+        "nextHopOrigin": "INCOMPLETE",
+        "priority": 0,
+        "routeStatus": "ACTIVE",
+        "routeType": "BGP"
+      }
+    ],
+    "bgpPeerStatus": [
+      {
+        "advertisedRoutes": [
+          {
+            "destRange": "10.0.0.0/8",
+            "kind": "compute#route",
+            "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem",
+            "nextHopIp": "169.254.31.169",
+            "nextHopOrigin": "INCOMPLETE",
+            "priority": 100,
+            "routeType": "BGP"
+          }
+        ],
+        "enableIpv4": true,
+        "enableIpv6": false,
+        "ipAddress": "169.254.31.169",
+        "md5AuthEnabled": false,
+        "name": "auto-ia-bgp-vlan-er-1-34f1f5cbbbb7b83",
+        "numLearnedRoutes": 5,
+        "peerIpAddress": "169.254.31.170",
+        "state": "Established",
+        "status": "UP",
+        "uptime": "39 minutes, 34 seconds",
+        "uptimeSeconds": "2374"
+      }
+    ],
+    "network": "https://www.googleapis.com/compute/v1/projects/vwan-rfc1918-260916-1138/global/networks/vwan-onprem"
+  }
+}
