@@ -1,0 +1,14 @@
+{
+  "value": [
+    {
+      "addressPrefixes": [
+        "172.21.1.0/24"
+      ],
+      "nextHopType": "Virtual Network Connection",
+      "nextHops": [
+        "/subscriptions/a8fbd8e1-fb5a-4411-804a-4ac80929c93c/resourceGroups/lab-vwan-rfc1918-20260916/providers/Microsoft.Network/virtualHubs/hub-se/hubVirtualNetworkConnections/conn-spoke-se"
+      ],
+      "routeOrigin": "/subscriptions/a8fbd8e1-fb5a-4411-804a-4ac80929c93c/resourceGroups/lab-vwan-rfc1918-20260916/providers/Microsoft.Network/virtualHubs/hub-se/hubVirtualNetworkConnections/conn-spoke-se"
+    }
+  ]
+}

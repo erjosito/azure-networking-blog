@@ -1,10 +1,13 @@
-﻿# Azure Networking Blog
+# Azure Networking Blog
 
 Hands-on diagnostics, gotchas, and field findings from deploying and troubleshooting Azure Networking labs.
 
 ## Posts
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
+
+- **[2026-09] What happens when on-premises advertises `10.0.0.0/8` to Azure Virtual WAN?**: A packet-by-packet and route-table view of ExpressRoute, Private Routing Intent, and Azure Firewall's two-stage forwarding model
+  - [Read post](./2026-09-vwan-rfc1918-routing-intent/)
 
 - **[2026-08] Multi-Region UDR Transit with Azure Managed VNRA: Design Guide and Observability Model**: Validated cross-region hub-spoke-VNRA topology, complete UDR chain, the narrower diagnostic surface of managed hardware, and TTL-invisible forwarding as a verification signal
   - [Read post](./dual-hub-vnra-udr-transit/)
@@ -19,4 +22,3 @@ The following posts have been dynamically generated with GitHub Copilot CLI and 
 ---
 
 *Each post lives in its own date-prefixed folder. Clone, explore, and reproduce.*
-
