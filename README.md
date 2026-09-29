@@ -6,6 +6,9 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
+- **[2026-09] Backing Up Azure Virtual WAN IPsec over ExpressRoute with Internet VPN**: Why dedicated per-tunnel BGP adjacencies survive complete ExpressRoute loss, a floating adjacency does not, and static backup requires health automation
+  - [Read post](./2026-09-vwan-ipsec-over-er-backup/)
+
 - **[2026-09] What happens when on-premises advertises `10.0.0.0/8` to Azure Virtual WAN?**: A packet-by-packet and route-table view of ExpressRoute, Private Routing Intent, and Azure Firewall's two-stage forwarding model
   - [Read post](./2026-09-vwan-rfc1918-routing-intent/)
 
