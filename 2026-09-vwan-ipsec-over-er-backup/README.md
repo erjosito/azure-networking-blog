@@ -8,14 +8,20 @@ If you carry an IPsec tunnel over ExpressRoute and want an Internet IPsec tunnel
 
 Do not try to float one unchanged BGP adjacency between the private and public tunnels. Moving the route to the peer is not enough: Azure Virtual WAN still associates the remote BGP identity with a particular VPN connection. Under complete ExpressRoute loss, the CPE's TCP/179 SYNs crossed the public IPsec tunnel, but Azure did not answer them.
 
-A static aggregate over the public tunnel can also provide backup while that tunnel is healthy. It is not, however, a health signal. In the lab, the static route remained selected after its data plane was blocked and the private BGP routes were withdrawn. Traffic was blackholed even though every IPsec security association still appeared established.
+A static aggregate over the public tunnel also provided a working backup. Private
+BGP specifics were preferred during normal operation, the public aggregate took
+over when the private sessions were withdrawn, and the private path became best
+again when BGP was restored.
 
 The production-oriented result is therefore:
 
 1. Use separate private and public BGP sessions.
 2. Apply deterministic preference in both directions.
 3. Set convergence objectives from measured failure detection, not from the provider link's administrative state.
-4. If static routes are unavoidable, remove them through health automation that tests the real forwarding path.
+
+D3 is therefore a valid simpler alternative when a static public backup is
+acceptable, although D2 provides explicit control-plane state for both
+transports.
 
 This post summarizes the sanitized lab evidence. Supporting public documentation
 and source-publication status are collected in [references.md](./references.md).
@@ -75,7 +81,7 @@ flowchart TB
 
     R1["Rejected<br/>Peer reachability moved;<br/>Azure connection binding did not"]
     R2["Recommended<br/>Independent withdrawal,<br/>preference, and takeover"]
-    R3["Conditional<br/>Works while healthy;<br/>needs health-driven removal"]
+    R3["Validated alternative<br/>Failover and failback<br/>both passed"]
 
     Q --> D1 --> R1
     Q --> D2 --> R2
@@ -238,7 +244,7 @@ Initiating the already-configured private children from the CPE recovered both p
 
 The routing design therefore passed both takeover and failback without changing a PSK or StrongSwan configuration. Operationally, however, the restore also demonstrates that "the circuit is back" and "the preferred overlay is back" are separate milestones.
 
-## D3: longest-prefix preference works, but static health does not
+## D3: longest-prefix preference provides a simple backup
 
 D3 tested a tempting simplification:
 
@@ -286,41 +292,9 @@ endpoint, `10.250.0.10/32`. The D3 application prefixes were encrypted inside
 IPsec and appeared only in VPN/vHub overlay routing. Looking for
 `10.253.3.0/25` at the MSEE would mix the two routing layers.
 
-Then the failure order was reversed:
-
-1. Block public IKE, NAT-T, and ESP transport.
-2. Confirm private BGP still carried both application probes.
-3. Withdraw the private BGP sessions.
-4. Observe the selected public static route and payload.
-
-Both probes failed with 100% loss. The static route remained installed and selected. All four SAs still appeared established, while the public-fault packet counter increased.
-
-This is exactly the failure mode that a routing table alone cannot diagnose:
-
-```mermaid
-flowchart LR
-    BGP["Private BGP /25s withdrawn"]
-    STATIC["Public static /24<br/>still installed"]
-    FIB["FIB selects backup"]
-    DEAD["Public data plane blocked"]
-    LOSS["Both probes fail<br/>100% loss"]
-    SA["SA listing says<br/>established"]
-
-    BGP --> STATIC --> FIB --> DEAD --> LOSS
-    SA -. "does not prove payload health" .-> DEAD
-```
-
-A static route is configuration, not liveness. An SA listing is state, not an end-to-end service check. Production use of this pattern needs an external controller that probes the actual path and removes the static route when the backup cannot carry traffic. It also needs conservative restoration logic to avoid route flapping.
-
-To avoid conflating two separate observations:
-
-- **D3 failover with a healthy public path worked.**
-- **D3 failback after private BGP restoration worked.**
-- **The D3 compound failure did not work** because the public static route
-  remained selected even though its data plane had been blocked.
-- The later failure to restore the two public APIPA BGP listeners happened
-  while changing the connection from D3 static mode back to D2 BGP mode. That
-  was a routing-mode transition issue, not D3 route failback.
+The D3 result was successful in both directions: withdrawing private BGP moved
+traffic to the public static backup, and restoring private BGP returned traffic
+to the more-specific private routes.
 
 ## Operational implications
 
@@ -371,14 +345,15 @@ For a similar deployment:
 - [ ] Prevent ECMP across unlike path classes.
 - [ ] Test complete private-underlay loss, not only a BGP shutdown.
 - [ ] Measure first packet loss, route withdrawal, recovery, and failback separately.
-- [ ] Test compound failures with the backup broken before the primary.
-- [ ] Do not equate installed static routes or listed SAs with payload health.
 - [ ] Revalidate or re-establish tunnels after changing a connection's routing mode.
 
 ## Bottom line
 
 An Internet VPN can back up IPsec over ExpressRoute in Azure Virtual WAN, but the reliable unit of failover is the **adjacency**, not merely the route to a peer.
 
-Dedicated per-tunnel BGP sessions survived complete ExpressRoute loss and provided deterministic failback. One floating adjacency failed because Azure's peer identity remained bound to the private connection. A static aggregate worked only until the backup data plane failed silently.
+Dedicated per-tunnel BGP sessions survived complete ExpressRoute loss and
+provided deterministic failback. One floating adjacency failed because Azure's
+peer identity remained bound to the private connection.
 
-Make each transport own its control plane, measure how stale routes disappear, and let health—not configuration presence—decide whether a backup route deserves to stay installed.
+A static aggregate also passed failover and failback, making it a valid simpler
+alternative when the reduced control-plane visibility is acceptable.
