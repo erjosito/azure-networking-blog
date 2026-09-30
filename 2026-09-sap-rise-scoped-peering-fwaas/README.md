@@ -1,7 +1,7 @@
 # On-prem to SAP RISE with subnet peering and Azure Firewall: what your design options actually are
 
 **Posted:** 2026-09-30 | **By:** Kid (Blog Writer, net-lab-builder) | **Lab:** [sap-rise-scoped-peering-fwaas](https://github.com/erjosito/net-lab-builder/tree/main/labs/sap-rise-scoped-peering-fwaas)
-**Status:** Published. The BGP/control-plane fix for Design A is verified with real `az` CLI evidence; end-to-end data-plane reachability was not conclusively demonstrated in this lab run (see the evidence section).
+**Status:** Published. The BGP/control-plane fix for Design A is verified with real `az` CLI evidence to have worked at least once, then regressed under the same ARS configuration; end-to-end data-plane reachability was not conclusively demonstrated in this lab run (see the evidence section).
 
 ---
 
@@ -228,9 +228,9 @@ Both the gateway and the circuit edge agreed: no spoke prefix was being advertis
 
 ### After the option-1 fix
 
-Option 1 is the real ARS and hub-NVA redistribution fix. The post-fix captures now confirm it end to end: the ER Gateway learned the spoke prefix from both ARS peers, both MSEE route tables still show only the hub summary outward on the ExpressRoute circuit, and the gateway's own advertised-routes view matches that MSEE-side state.
+Option 1 is the real ARS and hub-NVA redistribution fix, and the honest story here has two different moments in time, not one steady state. The fix worked, with direct gateway-side proof. Later, against the identical Azure Route Server (ARS) configuration, that same gateway no longer had the route. Both captures are real, and both are shown below, labeled by which moment they came from.
 
-**ER Gateway evidence**
+**Moment 1: the fix working, evidenced directly on the ER Gateway**
 
 | View | Prefix | Next hop / source peer | Origin / AS path | What it means |
 |---|---|---|---|---|
@@ -241,9 +241,13 @@ Option 1 is the real ARS and hub-NVA redistribution fix. The post-fix captures n
 | Learned | `10.60.0.0/16` | nextHop `10.40.1.4`, sourcePeer `10.40.0.36` | `IBgp`, `65001` | Spoke prefix learned via ARS peer 1 |
 | Learned | `10.60.0.0/16` | nextHop `10.40.1.4`, sourcePeer `10.40.0.37` | `IBgp`, `65001` | Spoke prefix learned via ARS peer 2 |
 
-This is the key control-plane proof for option 1: Azure Route Server was now reflecting the spoke `/16` into the ER Gateway from both ARS peers.
+This table is the ER Gateway's own learned-routes view, not ARS's view of itself, so it is direct proof the spoke `/16` reached the gateway. At the same moment, the gateway's own BGP peer status to both ARS peers (`10.40.0.37`, `10.40.0.36`) reported `routesReceived: 2` on each session, `state: Connected`. This is a genuine, working checkpoint: option 1's control-plane fix did work, at least once.
 
-**MSEE route table evidence**
+**Moment 2: the same ARS configuration, later, with the route gone**
+
+Captured against the identical ARS object (matching etag `6d3b2998-7529-4d4e-b8cc-9079938f8909` in both the working and the later capture, meaning ARS's own configuration had not changed), the gateway's BGP peer status to the same two ARS peers now showed `routesReceived: 0` on each session. The gateway's learned-routes and advertised-routes tables no longer contained `10.60.0.0/16` at all, only `10.40.0.0/16` and the ExpressRoute link-local `/30`. The MSEE route tables below were captured at this same later moment, and they match the gateway's regressed state exactly, not because option 1 is designed to withhold the spoke prefix from MSEE, but because the gateway had already lost the route by the time these captures were taken.
+
+**MSEE route table evidence (regressed moment)**
 
 | Path | Prefix | Next hop | AS path | What it means |
 |---|---|---|---|---|
@@ -253,11 +257,13 @@ This is the key control-plane proof for option 1: Azure Route Server was now ref
 | Secondary | `10.40.0.0/16` | `10.40.0.12*` | `65515` | Hub summary via gateway instance 1 |
 | Secondary | `10.40.0.0/16` | `10.40.0.13` | `65515` | Hub summary via gateway instance 2 |
 
-The important absence is `10.60.0.0/16`: it appears in the ER Gateway learned-routes table because ARS reflected it inward from the hub NVA, but it does not appear in either MSEE route table because the gateway does not advertise that spoke `/16` outward on option 1.
+The gateway's own `list-advertised-routes` capture from this same moment agrees: it contains exactly one route, `10.40.0.0/16` via `10.40.0.13` with AS path `65515`, matching the MSEE-side view. A gateway that no longer learns `10.60.0.0/16` cannot advertise it outward either, so the absence here is a downstream consequence of Moment 2's regression, not a separate, by-design behavior of option 1.
 
-The gateway's own `az network vnet-gateway list-advertised-routes` capture confirms the same learned-versus-advertised distinction. It contains exactly one route, `10.40.0.0/16` via `10.40.0.13` with AS path `65515`, which matches the MSEE-side view and shows that option 1 fixed route learning inside Azure without causing the gateway to originate the spoke `/16` toward on-prem.
+**What changed between the two moments, and what we don't know.** ARS's own configuration is proven identical (same etag) across both captures, so the loss of the route was not caused by an ARS config change. The most direct explanation is a change in the gateway's own BGP session state with ARS in between: either the session reset and re-established without re-learning the route, or it stayed continuously connected while ARS separately withdrew a route it had briefly pushed. The evidence available (BGP session `connectedDuration` values across captures on different calendar days, and commit timestamps that are only an upper bound on actual capture time) is not precise enough to distinguish those two mechanisms. Both remain open candidates; neither is confirmed.
 
-That closes the earlier evidence gap. The remaining caveat for option 1 is separate from route propagation: later CE-to-spoke ping re-validation still failed, so this section now proves the control plane end to end, while the data-plane caveat remains documented elsewhere in the post and lab notes.
+**Practical takeaway for anyone deploying option 1:** a nonzero `routesReceived` count at deploy time, or a one-time spoke-prefix sighting in the gateway's learned-routes table, is not sufficient proof of a durable fix. This lab directly observed the route working and then not working, with no change to ARS's own configuration in between. Treat `routesReceived` as something to monitor continuously (for example via an alert on it dropping to zero on the gateway-to-ARS sessions), and re-verify explicitly after any BGP session disruption on this path, rather than checking once at deploy time and assuming it holds.
+
+**Recommended next step, not yet run:** a controlled BGP session reset test, deliberately flapping the ARS-to-hub-NVA peering or resetting the ER Gateway under a fresh lab lease, then capturing peer status and learned routes immediately before, immediately after, and again after some hours idle. That would show directly whether the route reappears on its own once the session re-establishes, or needs manual intervention every time, and would settle the reset-versus-withdrawal question left open above. This test has not been performed yet.
 
 ### After the option-2 fix
 
