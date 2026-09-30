@@ -9,7 +9,7 @@ The following posts have been dynamically generated with GitHub Copilot CLI and 
 - **[2026-09] On-prem to SAP RISE with scoped VNet peering and Azure Firewall — what your design options actually are**: An architectural comparison of the four practical ways to reach a SAP RISE spoke over ExpressRoute when only a firewall subnet is peered — ARS + NVA, `summarizedGatewayPrefixes`, Azure Firewall, and the anti-pattern of widening peering
   - [Read post](./2026-09-sap-rise-scoped-peering-fwaas/) _(draft — end-to-end validation of the reference scenario in progress)_
 
-- **[2026-09] Backing Up Azure Virtual WAN IPsec over ExpressRoute with Internet VPN**: Why dedicated per-tunnel BGP adjacencies survive complete ExpressRoute loss, a floating adjacency does not, and static backup requires health automation
+- **[2026-09] Azure Virtual WAN: ExpressRoute-Backed and Internet-Backed IPsec Tunnels on One On-Premises Device**: How to design routing when both tunnel classes terminate on one CPE, with a floating BGP adjacency rejected and dedicated or static alternatives validated
   - [Read post](./2026-09-vwan-ipsec-over-er-backup/)
 
 - **[2026-09] What happens when on-premises advertises `10.0.0.0/8` to Azure Virtual WAN?**: A packet-by-packet and route-table view of ExpressRoute, Private Routing Intent, and Azure Firewall's two-stage forwarding model
