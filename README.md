@@ -13,7 +13,7 @@ The following posts have been dynamically generated with GitHub Copilot CLI and 
   - [Read post](./2026-09-vwan-rfc1918-routing-intent/)
 
 - **[2026-08] Multi-Region UDR Transit with Azure Managed VNRA: Design Guide and Observability Model**: Validated cross-region hub-spoke-VNRA topology, complete UDR chain, the narrower diagnostic surface of managed hardware, and TTL-invisible forwarding as a verification signal
-  - [Read post](./dual-hub-vnra-udr-transit/)
+  - [Read post](./2026-08-dual-hub-vnra-udr-transit/)
 
 - **[2026-08] Are Azure public, service, and private endpoints equally fast?**: An equivalence benchmark with correctness controls and sensitivity calibration
   - [Read post](./2026-08-storage-endpoint-path-equivalence/)
@@ -25,3 +25,16 @@ The following posts have been dynamically generated with GitHub Copilot CLI and 
 ---
 
 *Each post lives in its own date-prefixed folder. Clone, explore, and reproduce.*
+
+---
+
+## Contributing / naming convention
+
+All post folders **must** use the naming pattern `YYYY-MM-<slug>`, where:
+
+- `YYYY-MM` is the year and month the post was first added to this repository (use the earliest git-add date if backfilling).
+- `<slug>` is a short, lowercase, hyphen-separated identifier that matches (or closely tracks) the source lab slug in [`erjosito/net-lab-builder`](https://github.com/erjosito/net-lab-builder).
+
+Examples: `2026-05-expressroute-megaport-bgp`, `2026-08-dual-hub-vnra-udr-transit`, `2026-09-vwan-rfc1918-routing-intent`.
+
+This keeps the post index chronologically sortable and makes cross-referencing labs and posts unambiguous.
