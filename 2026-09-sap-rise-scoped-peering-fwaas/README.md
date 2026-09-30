@@ -1,7 +1,7 @@
 # On-prem to SAP RISE with scoped VNet peering and Azure Firewall — what your design options actually are
 
 **Posted:** 2026-09-30 | **By:** Kid (Blog Writer, net-lab-builder) | **Lab:** [sap-rise-scoped-peering-fwaas](https://github.com/erjosito/net-lab-builder/tree/main/labs/sap-rise-scoped-peering-fwaas)
-**Status:** Draft — end-to-end data-plane validation of the reference scenario is still in progress (see the closing section).
+**Status:** Published — the BGP/control-plane fix for Design A is verified with real `az` CLI evidence; end-to-end data-plane reachability was not conclusively demonstrated in this lab run (see the evidence section).
 
 ---
 
@@ -13,7 +13,7 @@ So the question that keeps landing in design reviews is:
 
 > How do I get my on-prem sites to reach the *full* SAP RISE spoke — including workload subnets that are deliberately outside the peering scope — while keeping subnet-scoped peering and Azure Firewall (FWaaS) in the path?
 
-There are more answers than most docs let on. This post walks through the four practical designs, what each one actually changes at the control-plane and data-plane level, and where the trade-offs bite.
+There are more answers than most docs let on. This post walks through the three practical designs, what each one actually changes at the control-plane and data-plane level, and where the trade-offs bite.
 
 ---
 
@@ -55,11 +55,11 @@ graph TB
 
 Notice what the peering does — and does not — cover: **only the two `/27` NVA subnets are peered**. The workload subnet `10.60.1.0/24` is deliberately *outside* the peering scope. That is the whole point of subnet-scoped peering; it is also the source of every design problem below.
 
-Because peering only covers `10.60.0.0/27` on the spoke side, the ExpressRoute Gateway will — by default — advertise only that `/27` to on-prem. On-prem then has no route to the workload subnet, and packets to `10.60.1.10` never arrive. **Design options exist to solve this at four different layers.**
+Because peering only covers `10.60.0.0/27` on the spoke side, the ExpressRoute Gateway will — by default — advertise only that `/27` to on-prem. On-prem then has no route to the workload subnet, and packets to `10.60.1.10` never arrive. **Design options exist to solve this at three different layers.**
 
 ---
 
-## The four connectivity designs
+## The three connectivity designs
 
 ### Design A — Azure Route Server + a hub NVA that redistributes the spoke supernet
 
@@ -98,20 +98,9 @@ flowchart LR
 - ⚠️ Therefore Design B on its own is **not** a full end-to-end solution when the whole point is that peering excludes the workload subnet. It typically needs to be paired with a hub-side UDR pointing the supernet at the spoke NVA (which then Layer-3-routes into the workload subnet via its own NIC in the peered `/27`), turning it into a hybrid of B + a classic UDR chain.
 - ✅ Where it *does* shine: as a way to advertise a **summary prefix** to on-prem instead of exposing every peered `/27`. Even in the ARS design, teams often layer this on so the on-prem BGP table doesn't get polluted with dozens of small prefixes.
 
-### Design C — Azure Firewall in the hub as the transit NVA (the "FWaaS" flavor)
+> **A note on Azure Firewall / FWaaS:** an earlier draft of this post included a "Design C" that replaced the hub/spoke NVA with Azure Firewall as the transit hop. We pulled it after review: Azure Firewall does not speak BGP, so it cannot participate in route advertisement or learning the way the NVA does in Design A. It changes nothing about the *routing* problem this post is about — it would still need Design A (BGP-speaking NVA) or Design B (`summarizedGatewayPrefixes`) running underneath it to solve advertisement at all. In other words, Azure Firewall can optionally be layered on top of Design A or B for additional L4/L7 inspection and logging, but that's a forwarding/inspection choice, not a routing alternative, so it isn't listed here as a design on its own.
 
-**Where the fix lives:** you replace the Linux NVA with Azure Firewall Standard/Premium in the hub, and let Azure Firewall be the L3 hop that talks to both the on-prem side (via the gateway) and the spoke NVA (via peering + UDR).
-
-**How it works.** The hub gets an Azure Firewall subnet. UDRs on `GatewaySubnet` steer on-prem→spoke traffic to the firewall; UDRs on `AzureFirewallSubnet` steer spoke-bound traffic to the peered spoke-NVA IP. Return traffic goes through the same firewall. Azure Firewall handles the L4/L7 inspection, DNAT, and logging that a Linux NVA would otherwise have to do by hand.
-
-**Trade-offs**
-
-- ✅ **This is the FWaaS answer for teams that don't want to run their own NVA fleet.** No BGP to babysit, no ip_forward gotchas, no BIRD process to monitor. Full inspection and logging live in a managed service.
-- ✅ Composes cleanly with Designs A or B — Azure Firewall can sit alongside ARS + hub NVA (firewall for inspection, NVA for BGP) or in front of `summarizedGatewayPrefixes` (firewall for inspection, gateway for advertisement).
-- ⚠️ Azure Firewall does **not** speak BGP itself. You still need one of A or B (or a static UDR chain) to solve the *advertisement* problem — the firewall solves inspection, not route propagation.
-- ⚠️ Cost is a real design input at this scale. A hub-and-spoke pair with Azure Firewall Standard is not the same monthly line-item as a `Standard_B2s_v2` NVA VM.
-
-### Design D — Widen the peering scope (the anti-pattern, kept for comparison)
+### Design C — Widen the peering scope (the anti-pattern, kept for comparison)
 
 **Where the fix lives:** you stop scoping the peering to just the NVA subnets. You peer the whole hub to the whole spoke.
 
@@ -120,7 +109,7 @@ flowchart LR
 **Trade-offs**
 
 - ✅ Simplest possible network.
-- ❌ Defeats the entire premise. If SAP RISE (or your platform team) *required* subnet-scoped peering as a security control, this is a policy violation. It is included here only so the trade-off is explicit: **the security control causes the routing problem, and the answer is not to remove the security control.** The answer is one of A, B, or C.
+- ❌ Defeats the entire premise. If SAP RISE (or your platform team) *required* subnet-scoped peering as a security control, this is a policy violation. It is included here only so the trade-off is explicit: **the security control causes the routing problem, and the answer is not to remove the security control.** The answer is Design A or Design B.
 
 ---
 
@@ -130,10 +119,9 @@ flowchart LR
 |---|---|
 | You want the simplest possible advertisement fix and can live with pairing it with a UDR chain | **B** (`summarizedGatewayPrefixes`) |
 | You need arbitrary supernets, prefix filtering, or full BGP control | **A** (ARS + hub NVA) |
-| You want managed L4/L7 inspection and no NVA VMs to run | **C** (Azure Firewall), combined with A or B for advertisement |
-| You are willing to relax subnet scoping | **D** — and if you can do this cleanly, the routing problem was never yours to solve |
+| You are willing to relax subnet scoping | **C** — and if you can do this cleanly, the routing problem was never yours to solve |
 
-The realistic production shape for most SAP RISE deployments is **A + C** (Azure Firewall for inspection, hub NVA + ARS for BGP), or **B + C + hub UDR** for teams that prefer to keep BGP out of it.
+The realistic production shape for most SAP RISE deployments is **Design A** (ARS + hub NVA) for full BGP control, or **Design B** (`summarizedGatewayPrefixes` + a hub UDR) for teams that prefer to keep BGP out of it. Azure Firewall can be layered on top of either design purely for L4/L7 inspection and logging — that's an orthogonal forwarding decision, not a substitute for solving the routing problem.
 
 ---
 
@@ -189,20 +177,82 @@ Collect all six every time. Skipping any of them is how "control-plane looks fin
 
 ---
 
-## What this lab has, and hasn't, proven yet
+## Lab evidence: what actually happened when we ran this
 
-I want to be straight with you: this post is a design-comparison, not a validated end-to-end demo, because the reference S1 (Design A) scenario in the source lab is **currently in progress and not yet passing at the data-plane layer**. As of 2026-09-29, the S1 re-validation run shows:
+Design comparisons are cheap to write and easy to get wrong in the details. So here is the actual `az` CLI output from the S1 (Design A) lab run, showing both the failure and the fix — and, honestly, where validation still falls short.
 
-- All three hub-NVA BGP sessions independently stable and `Established`.
-- ARS correctly learning `10.60.0.0/16` from the hub NVA.
-- ER Gateway learned-routes still empty on the ARS peer — the `allowBranchToBranchTraffic = false` gotcha (Defect A above) plus a live-kernel `ip_forward = 0` on the hub NVA (Defect B above), plus one harness-specific route-table gap on the simulated CE side.
-- End-to-end on-prem → workload ping: still 100% packet loss.
+### Before the fix: on-prem never gets a route to the spoke
 
-Full validation notes and per-layer evidence live in the source lab's [`validation.md`](https://github.com/erjosito/net-lab-builder/blob/main/labs/sap-rise-scoped-peering-fwaas/validation.md).
+With ARS `allowBranchToBranchTraffic` at its default (`false`), here is the ER Gateway's own learned-routes table:
 
-None of that changes the design taxonomy above — Designs A/B/C/D and their trade-offs are independently defensible from Microsoft product behavior and community practice. But the "I ran this end-to-end and here is the packet capture" section that would normally close out a post like this is not written yet. It will be — either as a follow-up post once S1 passes clean, or as an appendix to this one — but I did not want to make you wait for that to see the design comparison, because the design comparison is what most teams actually need first.
+```jsonc
+// az network vnet-gateway list-learned-routes -g rg-saprise-swedencentral -n ergw-sap-rise
+{
+  "value": [
+    { "network": "10.40.0.0/16",       "origin": "Network", "sourcePeer": "10.40.0.13" },
+    { "network": "169.254.170.152/30", "origin": "EBgp",    "sourcePeer": "10.40.0.4", "asPath": "12076-64512" }
+  ]
+}
+```
 
-If your only takeaway is *"turn on `allowBranchToBranchTraffic` and verify `/proc/sys/net/ipv4/ip_forward` at runtime, not in a file"*, you already got value out of the post.
+Only the hub's own supernet (`10.40.0.0/16`) and the point-to-point link to the Megaport MCR are present. **`10.60.0.0/16` — the SAP RISE spoke — is completely absent.** And here is what the gateway advertises outward, toward the Megaport MSEE peer (`10.40.0.4`):
+
+```jsonc
+// az network vnet-gateway list-advertised-routes -g rg-saprise-swedencentral -n ergw-sap-rise --peer 10.40.0.4
+{
+  "value": [
+    { "network": "10.40.0.0/16", "origin": "Igp", "asPath": "65515" }
+  ]
+}
+```
+
+Same story: only the hub supernet goes out over ExpressRoute. Nothing for the spoke, because nothing was learned for it in the first place. **Net effect: on-premises never received a route to the spoke subnet, and would have no way to reach SAP workloads there over ExpressRoute.** This is exactly Defect A from the section above — ARS was holding the route internally but not reflecting it to the gateway because `allowBranchToBranchTraffic` was `false`, compounded by the hub NVA's live kernel `ip_forward` being `0`.
+
+### After the fix: the control-plane problem is solved
+
+We then applied the fix: ARS `allowBranchToBranchTraffic → true`, reapplied `net.ipv4.ip_forward = 1` on the hub NVA at runtime, and added a route table on the CE-simulation subnet. Re-querying the ER Gateway's learned routes afterward:
+
+```jsonc
+// az network vnet-gateway list-learned-routes -g rg-saprise-swedencentral -n ergw-sap-rise (post-fix)
+{
+  "value": [
+    { "network": "10.40.0.0/16",       "origin": "Network" },
+    { "network": "169.254.170.152/30", "origin": "EBgp"  },
+    { "network": "172.40.100.0/24",    "origin": "IBgp", "asPath": "65001-65000", "nextHop": "10.40.1.4", "sourcePeer": "10.40.0.36" },
+    { "network": "172.40.100.0/24",    "origin": "IBgp", "asPath": "65001-65000", "nextHop": "10.40.1.4", "sourcePeer": "10.40.0.37" },
+    { "network": "10.60.0.0/16",       "origin": "IBgp", "asPath": "65001",       "nextHop": "10.40.1.4", "sourcePeer": "10.40.0.36" },
+    { "network": "10.60.0.0/16",       "origin": "IBgp", "asPath": "65001",       "nextHop": "10.40.1.4", "sourcePeer": "10.40.0.37" }
+  ]
+}
+```
+
+**`10.60.0.0/16` now shows up** — learned via IBGP, AS path `65001` (the hub NVA), next-hop `10.40.1.4` (the hub NVA's peering interface), received redundantly from both ARS instances (`10.40.0.36` and `10.40.0.37`, ARS's two-peer HA design). This is a real, verifiable control-plane fix: Azure Route Server is now correctly redistributing the spoke supernet from the hub NVA through to the ER Gateway. Once a prefix is in the gateway's learned-routes table it is eligible for advertisement to on-prem via the circuit — the same mechanism shown failing above, now populated correctly.
+
+### The honest part: data-plane reachability was never actually proven
+
+Here's where I have to be careful not to oversell this. Fixing BGP is not the same as proving packets flow, and in this lab run, they didn't — not conclusively.
+
+In the *same* remediation round where the BGP fix above was captured, a ping from the simulated on-prem CE device to the spoke NVA (`10.60.0.4`) came back with 100% loss:
+
+```
+PING 10.60.0.4 (10.60.0.4) 56(84) bytes of data.
+--- 10.60.0.4 ping statistics ---
+5 packets transmitted, 0 received, 100% packet loss, time 4085ms
+```
+
+A later remediation attempt (`s1-ce-reachability-fix-retry3-20260929T172057Z`) tried again after an additional defect fix, and its own `summary.json` records:
+
+```json
+{
+  "stoppedAtStage": 4,
+  "allPassed": false,
+  "reason": "stage4 failed: CE could not ping 10.60.0.4 with 0% loss after Defect E apply; stage5-stage7 are non-authoritative extra captures from a local regex bug in the evidence harness and should not be treated as ordered verification results"
+}
+```
+
+That last clause matters: this run captured a stage 5–7 sequence (including a route-table snapshot) that, taken out of context, could look like a later success — but the harness itself explicitly disclaims those captures as non-authoritative, the product of a regex bug in the evidence tooling, not a valid ordered verification result. I am not going to cite that snapshot as evidence of anything, because the lab's own tooling says not to trust it.
+
+**Bottom line, stated plainly:** the BGP/control-plane fix demonstrably worked — Azure correctly learned, and would advertise, the spoke prefix after remediation. End-to-end ICMP reachability between on-premises and the SAP spoke workload was **not** conclusively demonstrated in this lab run. Every ping test we captured shows 100% packet loss, and the one artifact that might suggest otherwise is explicitly flagged by the lab's own evidence harness as unreliable. Routing is fixed; data-plane validation remains open. If you're reproducing this design, budget time for a data-plane investigation (NSG rules, effective routes on the workload NIC, and the spoke NVA's own forwarding/NAT config are the next places to look) — don't assume a clean BGP table means packets are flowing.
 
 ---
 
