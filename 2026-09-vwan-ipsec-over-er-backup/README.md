@@ -115,9 +115,83 @@ D2 assigned a different BGP control plane to each path class:
 - Public routes received local preference `100`.
 - Advertisements toward Azure used AS-path prepending on the public sessions so that Azure also preferred the private overlay.
 
+The diagram below separates the **IKE endpoints**, which build the underlay-facing
+IPsec SAs, from the **BGP endpoints**, which exist inside the XFRM interfaces.
+The private active-active instances cross-map to the observed BGP peer routes:
+Azure peer `.13` used `xfrm-pri0`, while `.12` used `xfrm-pri1`.
+
+```mermaid
+flowchart LR
+    subgraph CPE["GCP Linux CPE — ASN 65050"]
+        CPEPRI["Private IKE endpoint<br/>10.250.0.10"]
+        CPEPUB["Public IKE endpoint<br/>34.51.158.147 (1:1 NAT)"]
+        CPEBGPPRI["Private BGP source<br/>10.250.254.240"]
+        CPEBGPPUB["Public BGP source<br/>169.254.21.6"]
+    end
+
+    subgraph AZ["Azure Virtual WAN VPN gateway — ASN 65515"]
+        AZIKE0["Private IKE Instance0<br/>10.240.0.4"]
+        AZIKE1["Private IKE Instance1<br/>10.240.0.5"]
+        AZPUB0["Public IKE Instance0<br/>74.158.47.254"]
+        AZPUB1["Public IKE Instance1<br/>74.158.80.26"]
+        AZBGPPRI0["Private BGP peer<br/>10.240.0.13"]
+        AZBGPPRI1["Private BGP peer<br/>10.240.0.12"]
+        AZBGPPUB0["Public BGP peer<br/>169.254.21.5"]
+        AZBGPPUB1["Public BGP peer<br/>169.254.22.5"]
+    end
+
+    CPEPRI == "pri0 — IKE/IPsec over ER" ==> AZIKE0
+    CPEPRI == "pri1 — IKE/IPsec over ER" ==> AZIKE1
+    CPEPUB -. "pub0 — IKE/IPsec over Internet" .-> AZPUB0
+    CPEPUB -. "pub1 — IKE/IPsec over Internet" .-> AZPUB1
+
+    CPEBGPPRI == "TCP/179 inside xfrm-pri0" ==> AZBGPPRI0
+    CPEBGPPRI == "TCP/179 inside xfrm-pri1" ==> AZBGPPRI1
+    CPEBGPPUB -. "TCP/179 inside xfrm-pub0" .-> AZBGPPUB0
+    CPEBGPPUB -. "TCP/179 inside xfrm-pub1" .-> AZBGPPUB1
+```
+
 This produced four established sessions in the validated D2 baseline. Equal-cost paths were allowed within the private pair and within the public pair, but never across private and public transports.
 
 That separation solves the D1 problem. Azure does not need to reinterpret one peer identity. The public connection already owns its own BGP sessions, and those sessions can remain established while private transport is healthy.
+
+### Hub Routing Preference and path selection
+
+The virtual hub used **Hub Routing Preference = `ASPath`**. D2 advertised the
+same branch prefix, `10.253.2.0/24`, through both VPN connections:
+
+- Private sessions advertised the natural path containing one `65050`.
+- Public sessions added three `65050` prepends.
+- With `ASPath`, the shorter private advertisement won on the Azure side.
+
+The CPE made the reverse decision independently. Routes learned from the
+private peers received local preference `200`; routes learned from the public
+peers received local preference `100`. This provided deterministic preference
+in both directions rather than assuming Azure would infer that the IPsec
+underlay happened to be ExpressRoute.
+
+The hub-level effective-route output requires careful interpretation. In the
+normal capture, it showed:
+
+```text
+Prefix:         10.253.2.0/24
+Next hop type:  VPN_S2S_Gateway
+Route origin:   vWAN VPN gateway
+AS path:        not exposed in this consolidated view
+```
+
+That output proves the selected branch prefix entered the hub through the VPN
+overlay. It does **not** identify the winning VPN site or active-active
+instance: both the ER-backed and Internet-backed tunnels terminate on the same
+managed VPN gateway. The path-class evidence therefore came from the four BGP
+session states, FRR policy, scoped XFRM routes, and payload.
+
+| State | Azure-side selection | CPE route to `10.241.0.0/24` | Payload |
+| --- | --- | --- | --- |
+| Normal | Short private AS path selected for `10.253.2.0/24`; public prepended path remained standby | BGP distance 20 through `10.240.0.12/.13` on `xfrm-pri1/pri0` | Pass |
+| ER failed, before withdrawal | Hub still had the stale private advertisement | Stale private BGP route remained best | Fail |
+| ER failed, after convergence | Public APIPA advertisement became the selected route for the same `/24` | BGP distance 20 through `169.254.21.5/.22.5` on `xfrm-pub0/pub1` | Pass |
+| ER restored | Short private path selected again | Private BGP pair became best again | Pass |
 
 ## What full ExpressRoute loss looked like
 
@@ -174,6 +248,44 @@ D3 tested a tempting simplification:
 
 While private BGP was healthy, longest-prefix match selected the `/25`s. When private BGP was deliberately withdrawn and the Internet tunnel was healthy, the public `/24` carried the traffic successfully.
 
+The preference existed independently in each direction:
+
+| Direction | Primary | Backup | Why primary wins |
+| --- | --- | --- | --- |
+| Azure to branch | Private BGP `10.253.3.0/25` and `10.253.3.128/25` | Public static `10.253.3.0/24` | Longest-prefix match |
+| CPE to Azure | Private BGP `10.241.0.0/24`, distance 20 | Public XFRM static routes, distance 250 | Lower administrative distance |
+
+The CPE diagnostics made the transition explicit. In normal state, the BGP
+route was best while the static route remained installed but inactive:
+
+```text
+10.241.0.0/24 via BGP, distance 20, best
+  10.240.0.12 via xfrm-pri1
+  10.240.0.13 via xfrm-pri0
+
+10.241.0.0/24 via static, distance 250
+  xfrm-pub0
+  xfrm-pub1
+```
+
+After both private BGP neighbors were shut down, the route changed to:
+
+```text
+10.241.0.0/24 via static, distance 250, best
+  xfrm-pub0
+  xfrm-pub1
+```
+
+With a healthy Internet tunnel, that state passed payload. Restoring private
+BGP restored the distance-20 route and payload continued to pass. **D3
+failback therefore worked.**
+
+The MSEE route table cannot show this `/25` versus `/24` decision. MSEE is part
+of the ExpressRoute **underlay** and saw the route to the CPE's private IPsec
+endpoint, `10.250.0.10/32`. The D3 application prefixes were encrypted inside
+IPsec and appeared only in VPN/vHub overlay routing. Looking for
+`10.253.3.0/25` at the MSEE would mix the two routing layers.
+
 Then the failure order was reversed:
 
 1. Block public IKE, NAT-T, and ESP transport.
@@ -199,6 +311,16 @@ flowchart LR
 ```
 
 A static route is configuration, not liveness. An SA listing is state, not an end-to-end service check. Production use of this pattern needs an external controller that probes the actual path and removes the static route when the backup cannot carry traffic. It also needs conservative restoration logic to avoid route flapping.
+
+To avoid conflating two separate observations:
+
+- **D3 failover with a healthy public path worked.**
+- **D3 failback after private BGP restoration worked.**
+- **The D3 compound failure did not work** because the public static route
+  remained selected even though its data plane had been blocked.
+- The later failure to restore the two public APIPA BGP listeners happened
+  while changing the connection from D3 static mode back to D2 BGP mode. That
+  was a routing-mode transition issue, not D3 route failback.
 
 ## Operational implications
 
