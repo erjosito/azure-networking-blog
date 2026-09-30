@@ -98,6 +98,8 @@ flowchart LR
 - ⚠️ Therefore Design B on its own is **not** a full end-to-end solution when the whole point is that peering excludes the workload subnet. It typically needs to be paired with a hub-side UDR pointing the supernet at the spoke NVA (which then Layer-3-routes into the workload subnet via its own NIC in the peered `/27`), turning it into a hybrid of B + a classic UDR chain.
 - ✅ Where it *does* shine: as a way to advertise a **summary prefix** to on-prem instead of exposing every peered `/27`. Even in the ARS design, teams often layer this on so the on-prem BGP table doesn't get polluted with dozens of small prefixes.
 
+> **Evidence status for Design B: not tested in this lab.** Everything above about Design B is described conceptually, based on Microsoft's documented `summarizedGatewayPrefixes` behavior, not on lab-captured results. Unlike Design A, there is no MSEE-side or route-table evidence for Design B here: this lab run never actually flipped the toggle and re-ran the reachability checks. The live Terraform state for this lab's resource group is currently detached from the checkout (the state file is missing while the resources themselves still exist live), which blocked a safe attempt to deploy and test Design B today. Treat this section as an architecture option grounded in the documented feature, not as something this post has verified end-to-end the way it has for Design A.
+
 > **A note on Azure Firewall / FWaaS:** an earlier draft of this post included a "Design C" that replaced the hub/spoke NVA with Azure Firewall as the transit hop. We pulled it after review: Azure Firewall does not speak BGP, so it cannot participate in route advertisement or learning the way the NVA does in Design A. It changes nothing about the *routing* problem this post is about: it would still need Design A (BGP-speaking NVA) or Design B (`summarizedGatewayPrefixes`) running underneath it to solve advertisement at all. In other words, Azure Firewall can optionally be layered on top of Design A or B for additional L4/L7 inspection and logging, but that's a forwarding/inspection choice, not a routing alternative, so it isn't listed here as a design on its own.
 
 ### Design C: Widen the peering scope (the anti-pattern, kept for comparison)
@@ -170,7 +172,7 @@ The value of collecting evidence at multiple layers, rather than just pinging, i
 2. **Hub NVA BGP state:** `birdc show protocols` (or FRR equivalent). Confirms the NVA is up.
 3. **ARS learned routes:** `az network routeserver peering list-learned-routes`. Confirms ARS learned the supernet from the NVA.
 4. **ER Gateway learned routes:** `az network vnet-gateway list-learned-routes`. This is the layer where `allowBranchToBranchTraffic = false` shows up as an empty result even though (3) was populated.
-5. **On-prem BGP table:** from your CE or MCR/MSEE, whatever peers with Azure. Confirms the supernet reached on-prem.
+5. **On-prem BGP table, at the MSEE circuit peering itself, not just the gateway:** the ER Gateway's own `list-learned-routes` / `list-advertised-routes` output (layer 4) is the gateway's internal view. The authoritative "what on-prem genuinely receives" answer lives one layer further out, at the ExpressRoute circuit's Microsoft Enterprise Edge (MSEE) router: `az network express-route list-route-tables --peering-name AzurePrivatePeering --path primary` (and `--path secondary`, since MSEE is redundant). Collect both; a mismatch between the gateway view and the MSEE view is itself a finding.
 6. **Data-plane probe:** `ping` / `traceroute` from an on-prem host into a workload subnet address, *not* just the peered subnet address. This is the pass bar. Every other layer above can be green while this fails.
 
 Collect all six every time. Skipping any of them is how "control-plane looks fine, data-plane silently fails" ends up in production.
@@ -179,7 +181,7 @@ Collect all six every time. Skipping any of them is how "control-plane looks fin
 
 ## Lab evidence: what actually happened when we ran this
 
-Design comparisons are cheap to write and easy to get wrong in the details. So here is the actual `az` CLI output from the S1 (Design A) lab run, showing both the failure and the fix, and, honestly, where validation still falls short.
+Design comparisons are cheap to write and easy to get wrong in the details. So here is the actual `az` CLI output from the S1 (Design A) lab run, showing both the failure and the fix, and, honestly, where validation still falls short. Two layers of evidence are shown below: the ER Gateway's own internal learned/advertised-routes tables (the gateway's private view of its BGP state), and, further out, the MSEE-side circuit route table (what on-premises genuinely receives at the ExpressRoute peering itself). The MSEE capture is the authoritative one; the gateway view is included because it's the layer most people check first, and because in this lab run it corroborates the MSEE result exactly.
 
 ### Before the fix: on-prem never gets a route to the spoke
 
@@ -227,6 +229,35 @@ We then applied the fix: ARS `allowBranchToBranchTraffic → true`, reapplied `n
 ```
 
 **`10.60.0.0/16` now shows up:** learned via IBGP, AS path `65001` (the hub NVA), next-hop `10.40.1.4` (the hub NVA's peering interface), received redundantly from both ARS instances (`10.40.0.36` and `10.40.0.37`, ARS's two-peer HA design). This is a real, verifiable control-plane fix: Azure Route Server is now correctly redistributing the spoke supernet from the hub NVA through to the ER Gateway. Once a prefix is in the gateway's learned-routes table it is eligible for advertisement to on-prem via the circuit, the same mechanism shown failing above, now populated correctly.
+
+### The authoritative view: what the MSEE circuit peering itself sees
+
+Everything above is the ER Gateway's own internal table: its private view of what it has learned and what it thinks it is sending out. That is not the same thing as what on-premises actually receives. The circuit's real, authoritative record of the BGP UPDATEs delivered to on-prem lives one layer further out, at the ExpressRoute circuit's Microsoft Enterprise Edge (MSEE) router, on both the primary and secondary (redundant) MSEE paths:
+
+```jsonc
+// az network express-route list-route-tables -g rg-saprise-swedencentral -n er-sap-rise --peering-name AzurePrivatePeering --path primary
+{
+  "value": [
+    { "network": "10.40.0.0/16",       "nextHop": "10.40.0.12*", "path": "65515", "locPrf": "100", "weight": 0 },
+    { "network": "10.40.0.0/16",       "nextHop": "10.40.0.13",  "path": "65515", "locPrf": "100", "weight": 0 },
+    { "network": "169.254.170.152/30", "nextHop": "169.254.170.153", "path": "64512", "locPrf": "100", "weight": 0 }
+  ]
+}
+
+// az network express-route list-route-tables -g rg-saprise-swedencentral -n er-sap-rise --peering-name AzurePrivatePeering --path secondary
+{
+  "value": [
+    { "network": "10.40.0.0/16", "nextHop": "10.40.0.12*", "path": "65515", "locPrf": "100", "weight": 0 },
+    { "network": "10.40.0.0/16", "nextHop": "10.40.0.13",  "path": "65515", "locPrf": "100", "weight": 0 }
+  ]
+}
+```
+
+Both MSEE paths agree: only the hub supernet `10.40.0.0/16` (via both ARS/hub-NVA next-hops, ECMP) and the peering link-local `/30` are present. The spoke supernet `10.60.0.0/16` is absent from both. That result matches the ER Gateway's own advertised-routes view exactly, which is the reassuring part: there is no discrepancy between the gateway's internal table and what the circuit's real router genuinely holds for this baseline. First confirm the circuit itself is healthy, which it is: `az network express-route show` on the same circuit reports `circuitProvisioningState: Enabled` and `serviceProviderProvisioningState: Provisioned`, so this is not a stale or half-built circuit; the MSEE table above is a live, current read.
+
+Practically: don't stop at the ER Gateway's `list-learned-routes` / `list-advertised-routes` output when you're trying to prove what on-prem receives. Treat it as the internal, gateway-side view, useful for narrowing down *where* in the chain a route disappeared, but confirm the actual claim (what on-prem gets) against `az network express-route list-route-tables` on both MSEE paths. In this lab, the two layers agreed; they will not always.
+
+> **A note on gateway transit.** The subnet peerings under test here (hub NVA subnet ↔ spoke NVA subnet) are deployed with `allowGatewayTransit=false` and `useRemoteGateways=false` on both sides. If you're picturing the CE-simulator reaching the hub *through* gateway transit over that subnet-scoped peering, it doesn't, and that's by design, not an oversight. The simulated on-prem CE sits in its own separate VNet (`vnet-onprem-sim`), connected to the hub with a plain, fully-peered (not subnet-scoped) VNet peering. Gateway transit was never needed for this test: the mechanism actually under test is the hub-NVA-to-spoke-NVA data path plus ARS/ER control-plane behavior (Design A), not VNet-peering-native gateway transit. If you deploy this design against a real ExpressRoute circuit instead of a simulated CE, gateway transit isn't part of the picture there either; the ER Gateway advertises to on-prem over the physical circuit, independent of any VNet-to-VNet peering flags.
 
 ### The honest part: data-plane reachability was never actually proven
 
