@@ -296,6 +296,56 @@ The D3 result was successful in both directions: withdrawing private BGP moved
 traffic to the public static backup, and restoring private BGP returned traffic
 to the more-specific private routes.
 
+## Virtual hub effective routes during normal operation, failover, and failback
+
+The following snapshots came from the default virtual hub route table. They are
+filtered to each design's branch prefixes and the private IPsec endpoint route;
+the unchanged workload route `10.241.0.0/24` is omitted.
+
+The endpoint route `10.250.0.10/32` is an **underlay** route learned through the
+ExpressRoute gateway. Its presence or absence shows whether the private IPsec
+endpoint is reachable over ExpressRoute. The `10.253.x.x` routes are
+**overlay** application routes learned through the VPN gateway.
+
+### D1 effective routes
+
+| State | Relevant vHub effective routes | Interpretation |
+| --- | --- | --- |
+| Normal | `10.250.0.10/32 -> ExpressRouteGateway`<br/>`10.253.1.0/24 -> VPN_S2S_Gateway` | The private underlay and floating BGP adjacency were operational. |
+| Full ER failure | Neither `10.250.0.10/32` nor `10.253.1.0/24` was present | The ER endpoint route withdrew, and the floating adjacency did not establish through the public VPN connection. |
+| Failback | `10.250.0.10/32 -> ExpressRouteGateway`<br/>`10.253.1.0/24 -> VPN_S2S_Gateway` | Returning the peer route to the private tunnel restored the adjacency and branch route. |
+
+D1 is the only design where complete ER loss removed the application prefix:
+the backup transport was healthy, but Azure did not accept the floating peer on
+the other VPN connection.
+
+### D2 effective routes
+
+| State | Relevant vHub effective routes | Interpretation |
+| --- | --- | --- |
+| Normal | `10.250.0.10/32 -> ExpressRouteGateway`<br/>`10.253.2.0/24 -> VPN_S2S_Gateway` | The private advertisement was preferred; the public advertisement was standby. |
+| Full ER failure, after private BGP withdrawal | `10.250.0.10/32 -> ExpressRouteGateway`<br/>`10.253.2.0/24 -> VPN_S2S_Gateway` | The application prefix remained through public BGP. The consolidated snapshot still contained the stale ER endpoint route even though the GCP VXC was down and both private BGP sessions were in `Connect`. |
+| Failback | `10.250.0.10/32 -> ExpressRouteGateway`<br/>`10.253.2.0/24 -> VPN_S2S_Gateway` | Private reachability returned and the shorter private AS path became preferred again. |
+
+Both entries are identical in all three D2 snapshots. The consolidated vHub
+route table exposes the managed VPN gateway as next hop, not the winning VPN
+site, link, or BGP neighbor, and its underlay entry was not synchronized with
+the already-completed private BGP withdrawal. Megaport state plus FRR and BGP
+state therefore identify the transport transition and which overlay adjacency
+owned `10.253.2.0/24`; the vHub table alone cannot do so.
+
+### D3 effective routes
+
+| State | Relevant vHub effective routes | Interpretation |
+| --- | --- | --- |
+| Normal | `10.250.0.10/32 -> ExpressRouteGateway`<br/>`10.253.3.0/25 -> VPN_S2S_Gateway`<br/>`10.253.3.128/25 -> VPN_S2S_Gateway`<br/>`10.253.3.0/24 -> VPN_S2S_Gateway` | Both private specifics and the public static aggregate were installed; longest-prefix match selected the `/25`s. |
+| Full ER failure, after convergence | `10.253.3.0/24 -> VPN_S2S_Gateway` | The ER endpoint and private `/25`s withdrew, leaving the public static aggregate as the usable backup. |
+| Failback | `10.250.0.10/32 -> ExpressRouteGateway`<br/>`10.253.3.0/25 -> VPN_S2S_Gateway`<br/>`10.253.3.128/25 -> VPN_S2S_Gateway`<br/>`10.253.3.0/24 -> VPN_S2S_Gateway` | The private specifics returned and again won by longest-prefix match. |
+
+D3 is the clearest design in the vHub output because failover changes the
+prefix set itself. D2 changes the source of one identical prefix, a distinction
+that this route-table view does not expose.
+
 ## Operational implications
 
 ### Prefer explicit path ownership
