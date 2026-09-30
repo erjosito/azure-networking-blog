@@ -228,7 +228,7 @@ Both the gateway and the circuit edge agreed: no spoke prefix was being advertis
 
 ### After the option-1 fix
 
-Option 1 is the real ARS and hub-NVA redistribution fix. The genuine post-fix capture shows the ER Gateway finally learning the spoke prefix, but the MSEE route tables and the gateway's own advertised-routes view were not re-captured at that exact successful checkpoint.
+Option 1 is the real ARS and hub-NVA redistribution fix. The post-fix captures now confirm it end to end: the ER Gateway learned the spoke prefix from both ARS peers, both MSEE route tables still show only the hub summary outward on the ExpressRoute circuit, and the gateway's own advertised-routes view matches that MSEE-side state.
 
 **ER Gateway evidence**
 
@@ -245,12 +245,19 @@ This is the key control-plane proof for option 1: Azure Route Server was now ref
 
 **MSEE route table evidence**
 
-| Capture | Status | Note |
-|---|---|---|
-| Primary MSEE route table | Not captured at the successful option-1 checkpoint | No genuine post-fix MSEE primary capture exists in the evidence set |
-| Secondary MSEE route table | Not captured at the successful option-1 checkpoint | No genuine post-fix MSEE secondary capture exists in the evidence set |
+| Path | Prefix | Next hop | AS path | What it means |
+|---|---|---|---|---|
+| Primary | `10.40.0.0/16` | `10.40.0.12*` | `65515` | Hub summary via gateway instance 1 |
+| Primary | `10.40.0.0/16` | `10.40.0.13` | `65515` | Hub summary via gateway instance 2 |
+| Primary | `169.254.170.152/30` | `169.254.170.153` | `64512` | ER link-local route |
+| Secondary | `10.40.0.0/16` | `10.40.0.12*` | `65515` | Hub summary via gateway instance 1 |
+| Secondary | `10.40.0.0/16` | `10.40.0.13` | `65515` | Hub summary via gateway instance 2 |
 
-**Honesty note:** the live lab did not re-capture `az network vnet-gateway list-advertised-routes` at this same successful option-1 checkpoint either, so the only genuine "after option-1 fix" route evidence available here is the gateway's learned-routes state. That is enough to prove the redistribution fix worked from Azure's perspective, but not enough to claim an MSEE-side confirmation that was never captured.
+The important absence is `10.60.0.0/16`: it appears in the ER Gateway learned-routes table because ARS reflected it inward from the hub NVA, but it does not appear in either MSEE route table because the gateway does not advertise that spoke `/16` outward on option 1.
+
+The gateway's own `az network vnet-gateway list-advertised-routes` capture confirms the same learned-versus-advertised distinction. It contains exactly one route, `10.40.0.0/16` via `10.40.0.13` with AS path `65515`, which matches the MSEE-side view and shows that option 1 fixed route learning inside Azure without causing the gateway to originate the spoke `/16` toward on-prem.
+
+That closes the earlier evidence gap. The remaining caveat for option 1 is separate from route propagation: later CE-to-spoke ping re-validation still failed, so this section now proves the control plane end to end, while the data-plane caveat remains documented elsewhere in the post and lab notes.
 
 ### After the option-2 fix
 
