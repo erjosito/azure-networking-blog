@@ -98,7 +98,26 @@ flowchart LR
 - ⚠️ Therefore Design B on its own is **not** a full end-to-end solution when the whole point is that peering excludes the workload subnet. It typically needs to be paired with a hub-side UDR pointing the supernet at the spoke NVA (which then Layer-3-routes into the workload subnet via its own NIC in the peered `/27`), turning it into a hybrid of B + a classic UDR chain.
 - ✅ Where it *does* shine: as a way to advertise a **summary prefix** to on-prem instead of exposing every peered `/27`. Even in the ARS design, teams often layer this on so the on-prem BGP table doesn't get polluted with dozens of small prefixes.
 
-> **Evidence status for Design B: not tested in this lab.** Everything above about Design B is described conceptually, based on Microsoft's documented `summarizedGatewayPrefixes` behavior, not on lab-captured results. Unlike Design A, there is no MSEE-side or route-table evidence for Design B here: this lab run never actually flipped the toggle and re-ran the reachability checks. The live Terraform state for this lab's resource group is currently detached from the checkout (the state file is missing while the resources themselves still exist live), which blocked a safe attempt to deploy and test Design B today. Treat this section as an architecture option grounded in the documented feature, not as something this post has verified end-to-end the way it has for Design A.
+> **Evidence status for Design B: now tested live.** An earlier version of this post said Design B was never deployed, because the lab's Terraform state for this resource group was detached from the checkout (the state file missing while the resources still exist live; see the source lab's `deployed-resources.md` for that known issue). That blocker still applies to Terraform specifically, but it does not block direct Azure CLI/REST calls against the live resources, so we tested Design B that way instead: bypass Terraform entirely, set the property directly against the live VNet, capture evidence, then revert.
+>
+> One tooling nuance surfaced immediately: the documented `az network vnet update --set properties.summarizedGatewayPrefixes=...` command does not currently work. The property is not present in the typed VNet model the installed Azure CLI serializes against, so the `--set` assignment is silently dropped. The working method was a raw ARM REST `PUT` against the VNet resource (`api-version=2025-07-01` or later), setting `properties.summarizedGatewayPrefixes.addressPrefixes` directly in the request body.
+>
+> With that in place, we set `vnet-hub`'s `summarizedGatewayPrefixes` to `["10.40.0.0/16","10.60.0.0/16"]` and captured MSEE evidence on both routers, then fully reverted the property. Both MSEE route tables and the ER Gateway's own advertised-routes output all now showed `10.60.0.0/16` as advertised toward on-prem:
+>
+> ```jsonc
+> // az network express-route list-route-tables ... --path primary (Design B state)
+> { "value": [
+>   { "network": "10.40.0.0/16", "nextHop": "10.40.0.12*", "path": "65515" },
+>   { "network": "10.40.0.0/16", "nextHop": "10.40.0.13",  "path": "65515" },
+>   { "network": "10.60.0.0/16", "nextHop": "10.40.0.12*", "path": "65515" },
+>   { "network": "10.60.0.0/16", "nextHop": "10.40.0.13",  "path": "65515" },
+>   { "network": "169.254.170.152/30", "nextHop": "169.254.170.153", "path": "64512" }
+> ] }
+> ```
+>
+> The secondary MSEE path and the ER Gateway's own `list-advertised-routes` output (`az network vnet-gateway list-advertised-routes ... --peer 10.40.0.4`) showed the same thing: `10.60.0.0/16` present alongside `10.40.0.0/16`, where before it was absent. After reverting the property, a final MSEE read confirmed `10.60.0.0/16` disappeared again, leaving only the hub `/16` and the link-local `/30`, matching the pre-test state exactly.
+>
+> This confirms Design B works precisely as advertised: it is an advertisement-only mechanism. On-prem now genuinely sees `10.60.0.0/16` as a valid BGP route. But it is a phantom route: no data-plane path into the spoke was created by this change alone. Nothing in `GatewaySubnet`, the peering fabric, or anywhere else was touched; the only thing that changed is the content of the BGP UPDATE message the ER Gateway sends toward on-prem. Evidence: `show-output/s2-designB-01-vnet-hub-before.json` through `s2-designB-07-msee-final-verify.json` in the source lab.
 
 > **A note on Azure Firewall / FWaaS:** an earlier draft of this post included a "Design C" that replaced the hub/spoke NVA with Azure Firewall as the transit hop. We pulled it after review: Azure Firewall does not speak BGP, so it cannot participate in route advertisement or learning the way the NVA does in Design A. It changes nothing about the *routing* problem this post is about: it would still need Design A (BGP-speaking NVA) or Design B (`summarizedGatewayPrefixes`) running underneath it to solve advertisement at all. In other words, Azure Firewall can optionally be layered on top of Design A or B for additional L4/L7 inspection and logging, but that's a forwarding/inspection choice, not a routing alternative, so it isn't listed here as a design on its own.
 
@@ -257,6 +276,23 @@ Both MSEE paths agree: only the hub supernet `10.40.0.0/16` (via both ARS/hub-NV
 
 Practically: don't stop at the ER Gateway's `list-learned-routes` / `list-advertised-routes` output when you're trying to prove what on-prem receives. Treat it as the internal, gateway-side view, useful for narrowing down *where* in the chain a route disappeared, but confirm the actual claim (what on-prem gets) against `az network express-route list-route-tables` on both MSEE paths. In this lab, the two layers agreed; they will not always.
 
+### A separate, deliberate "no remediation at all" baseline (and a documented assumption that turned out wrong)
+
+The evidence above came from the S1 (Design A) run's own before/after sequence. Separately, we ran a dedicated test to nail down the true "no fix in place" baseline: we temporarily disabled ARS `allowBranchToBranchTraffic` again (reproducing "S1's fix has never been applied") and captured a fresh set of MSEE and ER Gateway readings with nothing else in play.
+
+The result: MSEE shows **only** the hub `10.40.0.0/16` prefix, on both the primary and secondary paths, plus the ExpressRoute link-local `/30`. The spoke `10.60.0.0/16` is not advertised, which is expected. But critically, **the peered `/27` subnets are not advertised either.** Neither `10.40.1.0/27` (hub NVA subnet) nor `10.60.0.0/27` (spoke NVA subnet) appears anywhere: not on either MSEE router, not in the gateway's own learned-routes table, not in its advertised-routes table. Subnet peering, by itself, has no path onto the ER Gateway's BGP-advertised set at all.
+
+```jsonc
+// az network express-route list-route-tables ... --path primary (no S1/S2 remediation, ARS branch-to-branch disabled)
+{ "value": [
+  { "network": "10.40.0.0/16", "nextHop": "10.40.0.12*", "path": "65515" },
+  { "network": "10.40.0.0/16", "nextHop": "10.40.0.13",  "path": "65515" },
+  { "network": "169.254.170.152/30", "nextHop": "169.254.170.153", "path": "64512" }
+] }
+```
+
+This matters because the source lab's design document previously carried a claim, never backed by a captured show-output file, that peering alone (with no S1/S2 remediation) advertises the peered `/27` subnets to on-prem, not the `/16`. That claim is contradicted by the evidence above: there is no `/27` of any kind in any of the four captures. We corrected the design document to match the live result rather than delete the discrepancy quietly, because "a documented assumption was tested and found wrong" is itself a useful lesson: if a claim about what ExpressRoute advertises isn't backed by an MSEE capture, don't trust it, even if it's already written down somewhere with a name attached. Evidence: `show-output/s0-baseline-msee-01-route-table-primary.json`, `s0-baseline-msee-02-route-table-secondary.json`, `s0-baseline-msee-03-ergw-learned-routes.json`, `s0-baseline-msee-04-ergw-advertised-routes.json`.
+
 > **A note on gateway transit.** The subnet peerings under test here (hub NVA subnet ↔ spoke NVA subnet) are deployed with `allowGatewayTransit=false` and `useRemoteGateways=false` on both sides. If you're picturing the CE-simulator reaching the hub *through* gateway transit over that subnet-scoped peering, it doesn't, and that's by design, not an oversight. The simulated on-prem CE sits in its own separate VNet (`vnet-onprem-sim`), connected to the hub with a plain, fully-peered (not subnet-scoped) VNet peering. Gateway transit was never needed for this test: the mechanism actually under test is the hub-NVA-to-spoke-NVA data path plus ARS/ER control-plane behavior (Design A), not VNet-peering-native gateway transit. If you deploy this design against a real ExpressRoute circuit instead of a simulated CE, gateway transit isn't part of the picture there either; the ER Gateway advertises to on-prem over the physical circuit, independent of any VNet-to-VNet peering flags.
 
 ### The honest part: data-plane reachability was never actually proven
@@ -284,6 +320,14 @@ A later remediation attempt (`s1-ce-reachability-fix-retry3-20260929T172057Z`) t
 That last clause matters: this run captured a stage 5–7 sequence (including a route-table snapshot) that, taken out of context, could look like a later success, but the harness itself explicitly disclaims those captures as non-authoritative, the product of a regex bug in the evidence tooling, not a valid ordered verification result. I am not going to cite that snapshot as evidence of anything, because the lab's own tooling says not to trust it.
 
 **Bottom line, stated plainly:** the BGP/control-plane fix demonstrably worked: Azure correctly learned, and would advertise, the spoke prefix after remediation. End-to-end ICMP reachability between on-premises and the SAP spoke workload was **not** conclusively demonstrated in this lab run. Every ping test we captured shows 100% packet loss, and the one artifact that might suggest otherwise is explicitly flagged by the lab's own evidence harness as unreliable. Routing is fixed; data-plane validation remains open. If you're reproducing this design, budget time for a data-plane investigation (NSG rules, effective routes on the workload NIC, and the spoke NVA's own forwarding/NAT config are the next places to look); don't assume a clean BGP table means packets are flowing.
+
+### A known, separate caveat: Design A's fix has since regressed
+
+There is a pre-existing, separate issue worth stating plainly, because it's easy to miss if you only read the "after the fix" evidence above and assume that state is still current. Design A's BGP fix was verified working at the time it was captured. It is not reliably working right now.
+
+When we later toggled ARS `allowBranchToBranchTraffic` back to `true` after the baseline test described below, the config came back exactly as expected: `allowBranchToBranchTraffic: true`, both ARS-to-ExpressRoute-peer sessions in `state: Connected`. But `az network vnet-gateway list-bgp-peer-status` on those same sessions shows `routesReceived: 0` on both. Config is correct. Adjacency is healthy. Routes are not flowing. This is a hub NVA / BIRD drift issue, tracked separately in the source lab's `deployed-resources.md`, and it means Design A's previously-demonstrated fix is not currently delivering working reachability in this environment, even though it genuinely worked when originally tested and captured above.
+
+To be precise about scope: none of the new evidence captured in this round (the true no-remediation baseline and the Design B test, both below) was intended to fix this regression, and neither test result should be read as evidence that Design A is currently healthy. Each of those tests set Design A's related configuration (ARS `allowBranchToBranchTraffic`) to whatever state that specific test needed, independent of this drift. If you're reproducing Design A, don't take the "after the fix" BGP tables above as proof it will still be working when you check; verify `routesReceived` at the time you look, not just the config flag.
 
 ---
 
