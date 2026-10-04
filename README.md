@@ -6,6 +6,9 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
+- **[2026-10] Azure subnet peering: the same VM, one UDR, and two NVA hops**: A controlled same-source ICMP comparison with effective routes on all four NICs, a visible two-NVA mtr path, and a removal test that reverses the result
+  - [Read post](./2026-10-subnet-peering-udr-nva-transit/)
+
 - **[2026-09] On-prem to SAP RISE with scoped VNet peering and Azure Firewall — what your design options actually are**: An architectural comparison of the four practical ways to reach a SAP RISE spoke over ExpressRoute when only a firewall subnet is peered — ARS + NVA, `summarizedGatewayPrefixes`, Azure Firewall, and the anti-pattern of widening peering
   - [Read post](./2026-09-sap-rise-scoped-peering-fwaas/) _(draft — end-to-end validation of the reference scenario in progress)_
 

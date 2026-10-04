@@ -1,0 +1,34 @@
+{
+  "sourceCollection": "sap-rise-scoped-peering-fwaas/show-output/udr-ab-20261004T165000Z",
+  "transformations": [
+    "Decode stdout JSON wrappers; retain complete effective route arrays and Run Command messages.",
+    "Retain wrapper stderr and exitCode for each phase input.",
+    "No observed numbers or effective route fields changed.",
+    "Select only listed setup entries and pre-test NVA guest snapshots.",
+    "Replace setup resource group identifiers with <resource-group>.",
+    "Replace local absolute verdict evidenceRoot and restoration journal paths with relative labels.",
+    "Do not copy invalid A sample1, prior s3 evidence, VM creation payloads, or identity material."
+  ],
+  "originalSha256": {
+    "A/A-vm-hub-test-effective-routes-in-1-0.json": "5ad6a2323df2d928f7dcf89ab0a37ebbb42ad749c33346e6b1cc9923f2fa161e",
+    "A/A-vm-hub-nva-effective-routes-in-1-0.json": "e2561bff4653777c75780eef88182b65d617e165cec7a38a45f6b578089d1703",
+    "A/A-vm-spoke-nva-effective-routes-in-1-0.json": "ad197b0f9496da679a34ea57bb33ca4e7a23d09e9f12cd71257dd75e427fd935",
+    "A/A-vm-workload-probe-effective-routes-in-1-0.json": "a290fb450788c96b68d993ffa6d553a83fa8cd1ec586cff3615a7622cd6ffc79",
+    "A/A-vm-hub-test-comparison-in-2-0.json": "96b02490675cc45c367ae2db90141fe801fa17aaf37edc433c7c9a92a7cd2e51",
+    "B/B-vm-hub-test-effective-routes-in-1-0.json": "7066b3041ada464cbbe3fc3f754a310a68d31b73c61ed70fafb3b36fbe70027b",
+    "B/B-vm-hub-nva-effective-routes-in-1-0.json": "e2561bff4653777c75780eef88182b65d617e165cec7a38a45f6b578089d1703",
+    "B/B-vm-spoke-nva-effective-routes-in-1-0.json": "ad197b0f9496da679a34ea57bb33ca4e7a23d09e9f12cd71257dd75e427fd935",
+    "B/B-vm-workload-probe-effective-routes-in-1-0.json": "a290fb450788c96b68d993ffa6d553a83fa8cd1ec586cff3615a7622cd6ffc79",
+    "B/B-vm-hub-test-comparison-in-1-0.json": "e2e493488da2b7536a3ba7a583cf90e035f7f1118e4379da7b1900e6693cd7e7",
+    "A2/A2-vm-hub-test-effective-routes-in-1-0.json": "5ad6a2323df2d928f7dcf89ab0a37ebbb42ad749c33346e6b1cc9923f2fa161e",
+    "A2/A2-vm-hub-nva-effective-routes-in-1-0.json": "e2561bff4653777c75780eef88182b65d617e165cec7a38a45f6b578089d1703",
+    "A2/A2-vm-spoke-nva-effective-routes-in-1-0.json": "ad197b0f9496da679a34ea57bb33ca4e7a23d09e9f12cd71257dd75e427fd935",
+    "A2/A2-vm-workload-probe-effective-routes-in-1-0.json": "a290fb450788c96b68d993ffa6d553a83fa8cd1ec586cff3615a7622cd6ffc79",
+    "A2/A2-vm-hub-test-comparison-in-1-0.json": "355954086a6ed2527abe827ea79bd4b2baa4968e91fd78ef6ad86996eb66ce64",
+    "setup/changes.json": "363cdbd87c62e03b5f2c1e9e4a081868295cfc3701de8bc50c8109cef32b4d17",
+    "setup/hub-guest-before.json": "c0daf3c5fde0754034c8de39559f858912101910c392ba332ce64e244791ecc4",
+    "setup/spoke-guest-before.json": "4e7591e29291f57f69d689bd35be4de34da37b9942f478d7cd47aa1284102076",
+    "verdict.json": "d2b0623f1616ba2730e0ad101996339aed6ac5e2fbe36d3740a131b7c1520fc8",
+    "restore-verification.json": "db08ae0e71a56eed03f0aea6817fefb0ee92ae393a1861aaba06dbbeee9ea67a"
+  }
+}
