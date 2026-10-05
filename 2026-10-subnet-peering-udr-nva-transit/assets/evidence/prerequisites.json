@@ -1,0 +1,335 @@
+{
+  "sourceFiles": [
+    "setup/changes.json",
+    "setup/hub-guest-before.json",
+    "setup/spoke-guest-before.json"
+  ],
+  "selection": "Selected configuration entries only; no VM creation, identity payloads, or unrelated operations.",
+  "timing": "Guest snapshots precede the common hub policy setup; they are not per-phase guest-state captures.",
+  "selectedChanges": [
+    {
+      "item": "source-table",
+      "forward": [
+        "network",
+        "route-table",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "rt-ab-hub-test",
+        "-l",
+        "swedencentral",
+        "--disable-bgp-route-propagation",
+        "true"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "hub-table",
+      "forward": [
+        "network",
+        "route-table",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "rt-ab-hub-nva",
+        "-l",
+        "swedencentral",
+        "--disable-bgp-route-propagation",
+        "false"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "hub-route",
+      "forward": [
+        "network",
+        "route-table",
+        "route",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "ab-workload-via-spoke",
+        "--route-table-name",
+        "rt-ab-hub-nva",
+        "--address-prefix",
+        "10.60.1.4/32",
+        "--next-hop-type",
+        "VirtualAppliance",
+        "--next-hop-ip-address",
+        "10.60.0.4"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "spoke-route",
+      "forward": [
+        "network",
+        "route-table",
+        "route",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "ab-source-via-hub",
+        "--route-table-name",
+        "rt-spoke-nva-return",
+        "--address-prefix",
+        "10.40.2.4/32",
+        "--next-hop-type",
+        "VirtualAppliance",
+        "--next-hop-ip-address",
+        "10.40.1.4"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "workload-route",
+      "forward": [
+        "network",
+        "route-table",
+        "route",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "ab-source-via-spoke",
+        "--route-table-name",
+        "rt-spoke-workload",
+        "--address-prefix",
+        "10.40.2.4/32",
+        "--next-hop-type",
+        "VirtualAppliance",
+        "--next-hop-ip-address",
+        "10.60.0.4"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "hub-nsg-icmp",
+      "forward": [
+        "network",
+        "nsg",
+        "rule",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "Allow-UdrAB-ICMP",
+        "--nsg-name",
+        "nsg-hub-nva",
+        "--priority",
+        "200",
+        "--direction",
+        "Inbound",
+        "--access",
+        "Allow",
+        "--protocol",
+        "icmp",
+        "--source-address-prefixes",
+        "10.40.2.4/32",
+        "10.40.1.4/32",
+        "10.60.0.4/32",
+        "10.60.1.4/32",
+        "--destination-address-prefixes",
+        "10.40.2.4/32",
+        "10.40.1.4/32",
+        "10.60.0.4/32",
+        "10.60.1.4/32",
+        "--source-port-ranges",
+        "*",
+        "--destination-port-ranges",
+        "*"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "hub-nsg-tcp",
+      "forward": [
+        "network",
+        "nsg",
+        "rule",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "Allow-UdrAB-TCP22",
+        "--nsg-name",
+        "nsg-hub-nva",
+        "--priority",
+        "201",
+        "--direction",
+        "Inbound",
+        "--access",
+        "Allow",
+        "--protocol",
+        "tcp",
+        "--source-address-prefixes",
+        "10.40.2.4/32",
+        "10.40.1.4/32",
+        "10.60.0.4/32",
+        "10.60.1.4/32",
+        "--destination-address-prefixes",
+        "10.40.2.4/32",
+        "10.40.1.4/32",
+        "10.60.0.4/32",
+        "10.60.1.4/32",
+        "--source-port-ranges",
+        "*",
+        "--destination-port-ranges",
+        "22"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "spoke-nsg-icmp",
+      "forward": [
+        "network",
+        "nsg",
+        "rule",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "Allow-UdrAB-ICMP",
+        "--nsg-name",
+        "nsg-spoke-nva",
+        "--priority",
+        "200",
+        "--direction",
+        "Inbound",
+        "--access",
+        "Allow",
+        "--protocol",
+        "icmp",
+        "--source-address-prefixes",
+        "10.40.2.4/32",
+        "10.40.1.4/32",
+        "10.60.0.4/32",
+        "10.60.1.4/32",
+        "--destination-address-prefixes",
+        "10.40.2.4/32",
+        "10.40.1.4/32",
+        "10.60.0.4/32",
+        "10.60.1.4/32",
+        "--source-port-ranges",
+        "*",
+        "--destination-port-ranges",
+        "*"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "spoke-nsg-tcp",
+      "forward": [
+        "network",
+        "nsg",
+        "rule",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "Allow-UdrAB-TCP22",
+        "--nsg-name",
+        "nsg-spoke-nva",
+        "--priority",
+        "201",
+        "--direction",
+        "Inbound",
+        "--access",
+        "Allow",
+        "--protocol",
+        "tcp",
+        "--source-address-prefixes",
+        "10.40.2.4/32",
+        "10.40.1.4/32",
+        "10.60.0.4/32",
+        "10.60.1.4/32",
+        "--destination-address-prefixes",
+        "10.40.2.4/32",
+        "10.40.1.4/32",
+        "10.60.0.4/32",
+        "10.60.1.4/32",
+        "--source-port-ranges",
+        "*",
+        "--destination-port-ranges",
+        "22"
+      ],
+      "guest": null,
+      "status": "restored"
+    },
+    {
+      "item": "hub-policy-default",
+      "forward": "! ip route show table all | grep -q 'table 4242'\nip route add table 4242 default via 10.40.1.1 dev eth0",
+      "guest": "vm-hub-nva",
+      "status": "restored"
+    },
+    {
+      "item": "hub-policy-workload",
+      "forward": "! ip rule show | grep -q '^10420:'\nip route show table 4242 | grep -q '^default via 10.40.1.1 dev eth0'\nip rule add pref 10420 to 10.60.1.4/32 lookup 4242",
+      "guest": "vm-hub-nva",
+      "status": "restored"
+    },
+    {
+      "item": "hub-policy-peer",
+      "forward": "! ip rule show | grep -q '^10421:'\nip route show table 4242 | grep -q '^default via 10.40.1.1 dev eth0'\nip rule add pref 10421 to 10.60.0.4/32 lookup 4242",
+      "guest": "vm-hub-nva",
+      "status": "restored"
+    },
+    {
+      "item": "source-route",
+      "forward": [
+        "network",
+        "route-table",
+        "route",
+        "create",
+        "-g",
+        "<resource-group>",
+        "-n",
+        "ab-workload-via-hub",
+        "--route-table-name",
+        "rt-ab-hub-test",
+        "--address-prefix",
+        "10.60.1.4/32",
+        "--next-hop-type",
+        "VirtualAppliance",
+        "--next-hop-ip-address",
+        "10.40.1.4"
+      ],
+      "guest": null,
+      "status": "restored"
+    }
+  ],
+  "guestBefore": {
+    "vm-hub-nva": {
+      "value": [
+        {
+          "code": "ProvisioningState/succeeded",
+          "displayStatus": "Provisioning succeeded",
+          "level": "Info",
+          "message": "Enable succeeded: \n[stdout]\nSun Oct  4 17:36:05 UTC 2026\n=== routes ===\ndefault via 10.40.1.1 dev eth0 proto dhcp src 10.40.1.4 metric 100 \n10.40.1.0/27 dev eth0 proto kernel scope link src 10.40.1.4 metric 100 \n10.40.1.1 dev eth0 proto dhcp scope link src 10.40.1.4 metric 100 \n10.60.0.0/16 via 10.60.0.4 dev eth0 proto bird metric 32 onlink \n168.63.129.16 via 10.40.1.1 dev eth0 proto dhcp src 10.40.1.4 metric 100 \n169.254.169.254 via 10.40.1.1 dev eth0 proto dhcp src 10.40.1.4 metric 100 \n=== rules ===\n0:\tfrom all lookup local\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default\n=== NAT ===\n# Generated by iptables-save v1.8.7 on Sun Oct  4 17:36:05 2026\n*nat\n:PREROUTING ACCEPT [0:0]\n:INPUT ACCEPT [0:0]\n:OUTPUT ACCEPT [0:0]\n:POSTROUTING ACCEPT [0:0]\nCOMMIT\n# Completed on Sun Oct  4 17:36:05 2026\n=== forwarding ===\nnet.ipv4.ip_forward = 1\nnet.ipv4.conf.all.rp_filter = 2\n=== tools ===\n/usr/bin/python3\n/usr/bin/mtr\n/usr/sbin/traceroute\n/usr/bin/tcpdump\n=== SSH listener ===\nState  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess\nLISTEN 0      128          0.0.0.0:22        0.0.0.0:*          \nLISTEN 0      128             [::]:22           [::]:*          \nSNAPSHOT_COMPLETE\n\n[stderr]\n"
+        }
+      ]
+    },
+    "vm-spoke-nva": {
+      "value": [
+        {
+          "code": "ProvisioningState/succeeded",
+          "displayStatus": "Provisioning succeeded",
+          "level": "Info",
+          "message": "Enable succeeded: \n[stdout]\nSun Oct  4 17:36:01 UTC 2026\n=== routes ===\ndefault via 10.60.0.1 dev eth0 proto dhcp src 10.60.0.4 metric 100 \n10.60.0.0/27 dev eth0 proto kernel scope link src 10.60.0.4 metric 100 \n10.60.0.1 dev eth0 proto dhcp scope link src 10.60.0.4 metric 100 \n168.63.129.16 via 10.60.0.1 dev eth0 proto dhcp src 10.60.0.4 metric 100 \n169.254.169.254 via 10.60.0.1 dev eth0 proto dhcp src 10.60.0.4 metric 100 \n=== rules ===\n0:\tfrom all lookup local\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default\n=== NAT ===\n# Generated by iptables-save v1.8.7 on Sun Oct  4 17:36:01 2026\n*nat\n:PREROUTING ACCEPT [4:1600]\n:INPUT ACCEPT [0:0]\n:OUTPUT ACCEPT [362:29007]\n:POSTROUTING ACCEPT [80:7746]\n:SNAT_PUBLIC - [0:0]\n-A POSTROUTING -o eth0 -j SNAT_PUBLIC\n-A SNAT_PUBLIC -d 10.0.0.0/8 -j RETURN\n-A SNAT_PUBLIC -d 172.16.0.0/12 -j RETURN\n-A SNAT_PUBLIC -d 192.168.0.0/16 -j RETURN\n-A SNAT_PUBLIC -j MASQUERADE\nCOMMIT\n# Completed on Sun Oct  4 17:36:01 2026\n=== forwarding ===\nnet.ipv4.ip_forward = 1\nnet.ipv4.conf.all.rp_filter = 2\n=== tools ===\n/usr/bin/python3\n/usr/bin/mtr\n/usr/sbin/traceroute\n/usr/bin/tcpdump\n=== SSH listener ===\nState  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess\nLISTEN 0      128          0.0.0.0:22        0.0.0.0:*          \nLISTEN 0      128             [::]:22           [::]:*          \nSNAPSHOT_COMPLETE\n\n[stderr]\n"
+        }
+      ]
+    }
+  }
+}
