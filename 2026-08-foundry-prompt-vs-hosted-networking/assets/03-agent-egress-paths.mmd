@@ -1,0 +1,29 @@
+%% diagram-id: 03-agent-egress-paths
+%% lab: foundry-agent-prompt-vs-hosted-networking
+%% topology: T1 -- three egress paths compared
+%% scenarios: HS1 (prompt tool call) HS2 (hosted code call) advanced-HS1 (hosted toolbox tool call)
+%% authored: 2026-08-20
+flowchart LR
+    classDef client fill:#e3f2fd,stroke:#1565c0
+    classDef proxy fill:#ddf,stroke:#44a
+    classDef microvm fill:#fff8e1,stroke:#f57f17
+    classDef target fill:#e8f8e8,stroke:#2e7d32
+    classDef label fill:#f5f5f5,stroke:#999,color:#555
+
+    subgraph PATH1["Path 1 -- Prompt agent OpenAPI tool call (HS1) -- BASELINE (sibling lab 2026-08-14; not re-run here)"]
+        PA["Prompt agent<br/>Foundry endpoint"]:::client --> TS1["Tools Service"]:::proxy --> DP1["Data Proxy<br/>src_ip = 192.168.0.49 / 192.168.0.239<br/>(sibling lab 2026-08-14)"]:::proxy
+    end
+
+    subgraph PATH2["Path 2 -- Hosted agent OpenAPI Toolbox tool call -- PREDICTED (not implemented or tested)"]
+        HA_TB["Hosted agent<br/>Foundry endpoint"]:::client --> MV_TB["Micro VM<br/>calls Toolbox SDK"]:::microvm --> DP2["Data Proxy<br/>src_ip = 192.168.0.x<br/>same range as Path 1"]:::proxy
+    end
+
+    subgraph PATH3["Path 3 -- Hosted agent direct Python call (HS2) -- MEASURED (hosted direct code, this lab 2026-08-21)"]
+        HA_DC["Hosted agent<br/>Foundry endpoint"]:::client --> MV_DC["Micro VM<br/>direct code egress<br/>REST .238/.28/.110 (3 runs)<br/>SDK .92/.142/.165 (3 runs) · SSE .124"]:::microvm
+    end
+
+    DP1 -->|"HTTP/S<br/>ports 80/443"| ECHO["vm-tools-echo<br/>10.1.100.4<br/>echo.tools.lab"]:::target
+    DP2 -->|"HTTP/S<br/>ports 80/443"| ECHO
+    MV_DC -->|"HTTP/S<br/>Micro VM NIC egress<br/>different src_ip from Paths 1+2"| ECHO
+
+    NOTE["Design intent and measurement provenance:<br/>Path 1 baseline: sibling lab 2026-08-14, src_ip = 192.168.0.49 / 192.168.0.239 (data proxy). Not re-run here.<br/>Path 2: predicted via Toolbox SDK; not implemented or tested in this lab.<br/>Path 3 (7 invocations, 2026-08-21): REST .238/.28/.110 (3); SDK .92/.142/.165 (3); SSE .124 (1). 4th REST attempt NSG-blocked — no src_ip recorded."]:::label

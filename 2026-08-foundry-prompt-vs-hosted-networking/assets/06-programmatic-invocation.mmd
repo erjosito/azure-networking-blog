@@ -1,0 +1,50 @@
+%% diagram-id: 06-programmatic-invocation
+%% lab: foundry-agent-prompt-vs-hosted-networking
+%% purpose: client invocation paths (public and private), then hosted runtime egress
+%% scenarios: HS5 C4 -- programmatic invocation
+%% authored: 2026-08-20
+flowchart LR
+    classDef client fill:#e3f2fd,stroke:#1565c0
+    classDef deploy fill:#f3e5f5,stroke:#6a1b9a
+    classDef private fill:#e8f4f8,stroke:#1e88e5
+    classDef foundry fill:#ddf,stroke:#44a
+    classDef target fill:#e8f8e8,stroke:#2e7d32
+    classDef rbac fill:#fff8e1,stroke:#f57f17,stroke-dasharray:4 2
+
+    subgraph DEPLOY["Deploy surface -- VS Code Foundry Toolkit"]
+        VSC["VS Code<br/>Foundry Toolkit extension<br/>source-ZIP upload"]:::deploy
+        AZD["azd ai agent deploy<br/>terminal"]:::deploy
+    end
+
+    subgraph INVOKE_PUB["Invoke -- public path"]
+        JW["Jose workstation<br/>public IP<br/>when Foundry public access enabled"]:::client
+        PubDNS["Public DNS<br/>account.services.ai.azure.com<br/>public IP"]:::client
+    end
+
+    subgraph INVOKE_PRIV["Invoke -- private path (HS5 / C4)"]
+        VMDIAG["vm-diag<br/>MgmtSubnet 192.168.2.4<br/>SDK or azd CLI<br/>needs Foundry Agent Consumer role"]:::private
+        PE["Private endpoint<br/>PESubnet 192.168.1.x"]:::private
+        PZ["Private DNS zone<br/>privatelink.services.ai.azure.com<br/>A -> 192.168.1.x"]:::private
+    end
+
+    subgraph FOUNDRY["Foundry -- hosted agent runtime"]
+        FA["Foundry endpoint<br/>account.services.ai.azure.com"]:::foundry
+        MV_RT["Micro VM runtime<br/>echo-probe-agent<br/>AgentSubnet 192.168.0.y"]:::foundry
+    end
+
+    subgraph EGRESS["Agent egress after invocation"]
+        EV["vm-tools-echo<br/>10.1.100.4"]:::target
+        CV["vm-tools-ctrl<br/>10.1.200.4"]:::target
+    end
+
+    RBAC["RBAC required:<br/>Foundry Agent Consumer<br/>at project scope"]:::rbac
+
+    VSC -->|"deploy source-ZIP"| FA
+    AZD -->|"azd ai agent deploy"| FA
+    JW --> PubDNS --> FA
+    VMDIAG --> PZ -->|"private DNS resolves"| VMDIAG
+    VMDIAG -->|"HTTPS SDK call<br/>via private endpoint"| PE --> FA
+    FA --> MV_RT
+    MV_RT -->|"direct code call<br/>echo.tools.lab"| EV
+    MV_RT -->|"direct code call<br/>ctrl.tools.lab"| CV
+    RBAC -. "enforced on VMDIAG caller" .-> VMDIAG

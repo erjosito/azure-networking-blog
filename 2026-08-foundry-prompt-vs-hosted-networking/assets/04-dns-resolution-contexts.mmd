@@ -1,0 +1,36 @@
+%% diagram-id: 04-dns-resolution-contexts
+%% lab: foundry-agent-prompt-vs-hosted-networking
+%% topology: T1 -- DNS chain for all four resolution contexts
+%% scenarios: HS3 HS4 (dns forwarding) HS5 (private zone C4)
+%% authored: 2026-08-20
+flowchart TD
+    classDef client fill:#e3f2fd,stroke:#1565c0
+    classDef azuredns fill:#ede7f6,stroke:#4527a0
+    classDef resolver fill:#fff8e1,stroke:#f57f17
+    classDef dnsmasq fill:#e8f8e8,stroke:#2e7d32
+    classDef privzone fill:#fce4ec,stroke:#880e4f
+    classDef finding fill:#f1f8e9,stroke:#33691e,stroke-dasharray:4 2
+
+    subgraph C1C2["C1 -- Prompt tool call DNS  /  C2 -- Hosted toolbox tool call DNS\nboth resolve via data proxy context"]
+        DP_Q["Data Proxy container<br/>AgentSubnet 192.168.0.x"]:::client
+    end
+    subgraph C3["C3 -- Hosted agent direct code call DNS\nresolves via Micro VM NIC context"]
+        MV_Q["Micro VM NIC<br/>AgentSubnet 192.168.0.y<br/>hosted agent only"]:::client
+    end
+    subgraph C4["C4 -- Programmatic client DNS\nvm-diag or Jose workstation"]
+        DIAG_Q["vm-diag<br/>MgmtSubnet 192.168.2.4"]:::client
+    end
+
+    AZDNS["Azure DNS<br/>168.63.129.16<br/>VNet-internal resolver"]:::azuredns
+
+    DP_Q -->|"DNS query<br/>echo.tools.lab"| AZDNS
+    MV_Q -->|"DNS query<br/>echo.tools.lab"| AZDNS
+    DIAG_Q -->|"DNS query<br/>account.services.ai.azure.com"| AZDNS
+
+    AZDNS -->|"Matches forwarding ruleset<br/>tools.lab -> 192.168.3.20"| OEP["DNS Outbound EP<br/>192.168.3.20<br/>vnet-foundry"]:::resolver
+    AZDNS -->|"Matches private zone<br/>privatelink.services.ai.azure.com"| PZ["Private DNS Zone<br/>A record -> 192.168.1.x<br/>PESubnet"]:::privzone
+
+    OEP -->|"Forward to dnsmasq<br/>10.1.100.4:53  UDP/TCP 53"| DM["dnsmasq on vm-tools-echo<br/>echo.tools.lab A 10.1.100.4<br/>ctrl.tools.lab A 10.1.200.4"]:::dnsmasq
+    DM -->|"A record response"| OEP
+
+    FINDING["Key finding: dnsmasq sees query source from 192.168.3.21-25<br/>(DNSOutboundSubnet SNAT pool, not a fixed .20 EP address)<br/>in ALL of C1 C2 C3 -- cannot distinguish by DNS source alone<br/>Observable difference = HTTP TCP src_ip only"]:::finding
