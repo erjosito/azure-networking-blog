@@ -1,0 +1,260 @@
+{
+  "sourceFiles": [
+    "verdict.json",
+    "restore-verification.json"
+  ],
+  "readingOrder": "The ICMP verdict precedes full restoration. The later restoration PASS supersedes the verdict's pending-restore note.",
+  "experiment": {
+    "verdict": "PASS",
+    "scope": "Offline controlled-source-UDR ICMP A/B/A2 comparison only",
+    "evidenceRoot": "udr-ab-20261004T165000Z",
+    "canonicalPathsRelativeToEvidenceRoot": {
+      "A": "A\\A-vm-hub-test-comparison-in-2-0.json",
+      "B": "B\\B-vm-hub-test-comparison-in-1-0.json",
+      "A2": "A2\\A2-vm-hub-test-comparison-in-1-0.json",
+      "invalidPreservedNotUsed": "A\\A-vm-hub-test-comparison-in-1-0.json",
+      "setup": "setup\\changes.json",
+      "guestBefore": [
+        "setup\\hub-guest-before.json",
+        "setup\\spoke-guest-before.json",
+        "setup\\source-guest-before.json"
+      ],
+      "routes": [
+        "A\\A-vm-hub-test-effective-routes-in-1-0.json",
+        "A\\A-vm-hub-nva-effective-routes-in-1-0.json",
+        "A\\A-vm-spoke-nva-effective-routes-in-1-0.json",
+        "A\\A-vm-workload-probe-effective-routes-in-1-0.json",
+        "B\\B-vm-hub-test-effective-routes-in-1-0.json",
+        "B\\B-vm-hub-nva-effective-routes-in-1-0.json",
+        "B\\B-vm-spoke-nva-effective-routes-in-1-0.json",
+        "B\\B-vm-workload-probe-effective-routes-in-1-0.json",
+        "A2\\A2-vm-hub-test-effective-routes-in-1-0.json",
+        "A2\\A2-vm-hub-nva-effective-routes-in-1-0.json",
+        "A2\\A2-vm-spoke-nva-effective-routes-in-1-0.json",
+        "A2\\A2-vm-workload-probe-effective-routes-in-1-0.json"
+      ]
+    },
+    "source": "10.40.2.4",
+    "destination": "10.60.1.4",
+    "ping": {
+      "A": {
+        "sent": 5,
+        "received": 0,
+        "lossPercent": 100
+      },
+      "B": {
+        "sent": 5,
+        "received": 5,
+        "lossPercent": 0
+      },
+      "A2": {
+        "sent": 5,
+        "received": 0,
+        "lossPercent": 100
+      }
+    },
+    "mtrB": {
+      "protocol": "default ICMP",
+      "hops": [
+        "10.40.1.4",
+        "10.60.0.4",
+        "10.60.1.4"
+      ],
+      "verifiedHopCount": 3,
+      "verifiedNvaHopCount": 2,
+      "sentPerHop": 5,
+      "lossPercentPerHop": [
+        0,
+        0,
+        0
+      ]
+    },
+    "routeChanges": {
+      "normalization": "All fields retained; recursively sort object keys and array values; compare route multisets per NIC, ignoring ordering only.",
+      "AtoB": {
+        "nic": "vm-hub-test",
+        "added": {
+          "addressPrefix": [
+            "10.60.1.4/32"
+          ],
+          "disableBgpRoutePropagation": true,
+          "name": "ab-workload-via-hub",
+          "nextHopIpAddress": [
+            "10.40.1.4"
+          ],
+          "nextHopType": "VirtualAppliance",
+          "source": "User",
+          "state": "Active"
+        },
+        "removed": []
+      },
+      "BtoA2": "Exactly the AtoB added route removed; nothing added.",
+      "AequalsA2": true,
+      "allOtherRoutesOnAllFourNicsConstant": true,
+      "routeCountsA_B_A2": {
+        "source": [
+          43,
+          44,
+          43
+        ],
+        "hubNva": [
+          45,
+          45,
+          45
+        ],
+        "spokeNva": [
+          44,
+          44,
+          44
+        ],
+        "workload": [
+          5,
+          5,
+          5
+        ]
+      }
+    },
+    "commonSetup": [
+      "Ledger records source route table rt-ab-hub-test with disableBgpRoutePropagation=true and source subnet association; propagated ARS/ER routes are excluded from this source-table comparison.",
+      "Constant effective user routes: hub destination 10.60.1.4/32 via 10.60.0.4; spoke return 10.40.2.4/32 via 10.40.1.4; workload return 10.40.2.4/32 via 10.60.0.4.",
+      "Ledger records narrow endpoint ICMP/TCP22 NSG allows and hub policy table 4242 via local Azure gateway 10.40.1.1 for workload/peer destinations, bypassing existing remote-onlink BIRD selection.",
+      "Pre-test snapshots show forwarding enabled on both NVAs, empty hub NAT rules, and spoke private-destination NAT exclusions. Ledger contains no NAT changes."
+    ],
+    "assumptionsAndLimitations": [
+      "Common NSG/guest policy/NAT setup remained constant according to the supplied change ledger; guest-before snapshots are not per-phase guest-state or packet captures.",
+      "Invalid A sample1 uses unsupported mtr --icmp; preserved but excluded. Valid A sample2 and A2 have empty mtr hop reports: their measured 100% loss comes from ping, not mtr.",
+      "Source traceroute executable unavailable; successful B default-ICMP mtr visibly identifies both NVAs and destination.",
+      "Workload guest-agent unavailability and TCP22 liveness failure are supplied scope constraints, not independently re-tested here. No application/TCP verification or workload-originated trace; not a PASS for the entire initial Trinity TCP/packet-proof scope.",
+      "Peering restricts exported prefixes; UDR plus forwarding enforces the demonstrated path. This does not establish fabric-level source filtering, all bypasses prevented, or unobserved reverse-hop order.",
+      "Restoration status below is scoped to A2 and the supplied handoff; no live-state or ER/Megaport deletion verification was performed."
+    ],
+    "errors": [],
+    "restorationState": "A2 source UDR removed; common test setup and running VMs still await restore; ER/Megaport deletion intentionally permanent"
+  },
+  "restoration": {
+    "status": "PASS",
+    "verifiedAtUtc": "2026-10-04T18:12:32.743967+00:00",
+    "groups": [
+      {
+        "utc": "2026-10-04T18:00:08.036297+00:00",
+        "group": 1,
+        "checks": {
+          "group_journal_restored": true,
+          "guest_rules_match_original": true,
+          "guest_routes_match_original": true,
+          "guest_policy_4242_absent": true,
+          "restoration_cli_processes_zero": true
+        },
+        "localCliProcesses": 0,
+        "pendingCloudOperations": 0,
+        "cloudOperationEvidence": "All inverse commands fully waited, no --no-wait; read-only postconditions passed."
+      },
+      {
+        "utc": "2026-10-04T18:00:53.043914+00:00",
+        "group": 2,
+        "checks": {
+          "group_journal_restored": true,
+          "entry_17_rule_absent": true,
+          "entry_16_rule_absent": true,
+          "entry_15_rule_absent": true,
+          "restoration_cli_processes_zero": true
+        },
+        "localCliProcesses": 0,
+        "pendingCloudOperations": 0,
+        "cloudOperationEvidence": "All inverse commands fully waited, no --no-wait; read-only postconditions passed."
+      },
+      {
+        "utc": "2026-10-04T18:01:44.637150+00:00",
+        "group": 3,
+        "checks": {
+          "group_journal_restored": true,
+          "entry_14_rule_absent": true,
+          "entry_12_route_absent": true,
+          "entry_13_route_absent": true,
+          "restoration_cli_processes_zero": true
+        },
+        "localCliProcesses": 0,
+        "pendingCloudOperations": 0,
+        "cloudOperationEvidence": "All inverse commands fully waited, no --no-wait; read-only postconditions passed."
+      },
+      {
+        "utc": "2026-10-04T18:02:35.345935+00:00",
+        "group": 4,
+        "checks": {
+          "group_journal_restored": true,
+          "hub_experiment_table_absent": true,
+          "hub_original_association_restored": true,
+          "restoration_cli_processes_zero": true
+        },
+        "localCliProcesses": 0,
+        "pendingCloudOperations": 0,
+        "cloudOperationEvidence": "All inverse commands fully waited, no --no-wait; read-only postconditions passed."
+      },
+      {
+        "utc": "2026-10-04T18:04:41.307165+00:00",
+        "group": 5,
+        "checks": {
+          "group_journal_restored": true,
+          "workload_deallocated": true,
+          "temporary_vm_absent": true,
+          "temporary_disk_absent": true,
+          "no_pending_vm_provisioning": true,
+          "restoration_cli_processes_zero": true
+        },
+        "localCliProcesses": 0,
+        "pendingCloudOperations": 0,
+        "cloudOperationEvidence": "All inverse commands fully waited, no --no-wait; read-only postconditions passed."
+      },
+      {
+        "utc": "2026-10-04T18:07:48.388617+00:00",
+        "group": 6,
+        "checks": {
+          "group_journal_restored": true,
+          "workload_deallocated": true,
+          "all_original_vms_deallocated": true,
+          "source_association_removed": true,
+          "no_pending_vm_provisioning": true,
+          "restoration_cli_processes_zero": true
+        },
+        "localCliProcesses": 0,
+        "pendingCloudOperations": 0,
+        "cloudOperationEvidence": "All inverse commands fully waited, no --no-wait; read-only postconditions passed."
+      },
+      {
+        "utc": "2026-10-04T18:12:32.743967+00:00",
+        "group": 7,
+        "checks": {
+          "group_journal_restored": true,
+          "associated-nsg_normalized_matches_s0": true,
+          "associated-route-table_normalized_matches_s0": true,
+          "relevant-nics_normalized_matches_s0": true,
+          "vnet-hub_normalized_matches_s0": true,
+          "vnet-sap-rise_normalized_matches_s0": true,
+          "temporary_nic_absent": true,
+          "temporary_tables_absent": true,
+          "temporary_subnet_absent": true,
+          "original_four_vms_deallocated": true,
+          "s0_captured_vm_ids_preserved": true,
+          "original_four_vm_names_preserved": true,
+          "s0_captured_vm_nic_attachments_preserved": true,
+          "all_original_vm_nics_present": true,
+          "original_four_vm_os_disks_present": true,
+          "all_original_vms_and_disks_succeeded": true,
+          "route_server_resource_present": true,
+          "temporary_vm_disk_absent": true,
+          "er_resources_not_recreated": true,
+          "all_journal_entries_restored": true,
+          "restoration_cli_processes_zero": true
+        },
+        "localCliProcesses": 0,
+        "pendingCloudOperations": 0,
+        "cloudOperationEvidence": "All inverse commands fully waited, no --no-wait; read-only postconditions passed."
+      }
+    ],
+    "remainingOperations": [],
+    "localCliProcesses": 0,
+    "pendingCloudOperations": 0,
+    "journal": "setup/changes.json",
+    "normalization": "Ignore etag/provisioningState/resourceGuid and list ordering; compare all original named network resources. VNet top-level fields projected to s0 captured fields. Exclude GatewaySubnet ipConfigurations belonging to intentionally permanently deleted ER gateway; preserve GatewaySubnet itself. s0 VM/NIC snapshots contain the three experiment VMs; additionally verify original CE VM remains deallocated with its NIC and attached disk present."
+  }
+}
