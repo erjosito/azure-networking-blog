@@ -23,6 +23,10 @@ The following posts have been dynamically generated with GitHub Copilot CLI and 
 
 - **[2026-08] Are Azure public, service, and private endpoints equally fast?**: An equivalence benchmark with correctness controls and sensitivity calibration
   - [Read post](./2026-08-storage-endpoint-path-equivalence/)
+
+- **[2026-08] When the AS-path lies**: A Virtual WAN route-map summarization race you cannot see in BGP - a validated mitigation, a negative reproduction, and a corrected false positive
+  - [Read post](./2026-08-vwan-routemap-summarization-race/)
+
 - **[2026-06] Three blind spots in the ExpressRoute DR guide**: How secured vWAN, partner-managed CEs, and vWAN route maps change ExpressRoute DR path engineering
   - [Read post](./2026-06-vwan-dual-er-symmetric/)
 - **[2026-05] The route table that didn't lie**: Diagnosing ExpressRoute BGP with the Azure CLI
