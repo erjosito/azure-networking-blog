@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
+  <title id="title">Separate October 4 experiment: deliberately routed two-NVA transit</title>
+  <desc id="desc">Source UDR sends traffic to the running hub NVA, a fixed UDR sends it across subnet peering to the running spoke NVA, and a local VNet route reaches the workload. Both endpoint subnets remain outside peering.</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3Z" fill="#166534"/></marker></defs>
+  <rect width="1200" height="340" fill="white"/>
+  <g font-family="Arial, sans-serif" fill="#142237">
+    <text x="35" y="42" font-size="26" font-weight="bold">Separate transit illustration: NVAs ON, explicit UDR chain</text>
+    <text x="35" y="75" font-size="18">2026-10-04, state B. Only the NVA subnets are peered; endpoint subnets are not.</text>
+    <g stroke="#166534" fill="#f0fdf4" stroke-width="2">
+      <rect x="25" y="135" width="220" height="88" rx="8"/><rect x="335" y="135" width="220" height="88" rx="8"/>
+      <rect x="645" y="135" width="220" height="88" rx="8"/><rect x="955" y="135" width="220" height="88" rx="8"/>
+      <path d="M250 179H323" marker-end="url(#arrow)"/>
+      <path d="M560 179H633" marker-end="url(#arrow)"/>
+      <path d="M870 179H943" marker-end="url(#arrow)"/>
+    </g>
+    <g font-size="19" text-anchor="middle">
+      <text x="135" y="170">Source</text><text x="135" y="199">10.40.2.4</text>
+      <text x="445" y="170">Hub NVA</text><text x="445" y="199">10.40.1.4</text>
+      <text x="755" y="170">Spoke NVA</text><text x="755" y="199">10.60.0.4</text>
+      <text x="1065" y="170">Workload</text><text x="1065" y="199">10.60.1.4</text>
+      <text x="285" y="116" font-size="16">Source /32 UDR</text><text x="600" y="116" font-size="16">Fixed /32 UDR</text><text x="910" y="116" font-size="16">Local VNet route</text>
+    </g>
+    <text x="35" y="267" font-size="20" font-weight="bold">5/5 replies; mtr reports both NVAs and the workload</text>
+    <text x="35" y="301" font-size="18">A and A2: source UDR absent, 0/5. B: source UDR present, 5/5. Transit/return routes stay fixed.</text>
+  </g>
+</svg>

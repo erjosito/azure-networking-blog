@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">Subnet peering prevents the tested direct flow; full VNet peering permits it</title>
+  <desc id="desc">The same source 10.40.2.4 and workload 10.60.1.4 have zero of five replies with NVA-only subnet peering, five of five with full VNet peering, and zero again after restoration. Both NVAs are deallocated in all three states.</desc>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3Z" fill="#166534"/></marker></defs>
+  <rect width="1200" height="680" fill="#fff"/>
+  <g font-family="Arial, sans-serif" fill="#142237">
+    <text x="40" y="46" font-size="27" font-weight="bold">The peering scope changes. The endpoint pair does not.</text>
+    <text x="40" y="78" font-size="19">Source 10.40.2.4 in 10.40.2.0/27   |   Workload 10.60.1.4 in 10.60.1.0/24</text>
+    <rect x="35" y="104" width="1130" height="225" rx="12" fill="#fff7f7" stroke="#b91c1c" stroke-width="2"/>
+    <text x="60" y="139" font-size="23" font-weight="bold">Subnet peering: only the two NVA subnets participate</text>
+    <rect x="65" y="165" width="280" height="69" rx="8" fill="#eff6ff" stroke="#1e40af"/>
+    <text x="90" y="192" font-size="19">Source 10.40.2.4</text><text x="90" y="217" font-size="17">Endpoint subnet NOT peered</text>
+    <rect x="855" y="165" width="280" height="69" rx="8" fill="#eff6ff" stroke="#1e40af"/>
+    <text x="880" y="192" font-size="19">Workload 10.60.1.4</text><text x="880" y="217" font-size="17">Endpoint subnet NOT peered</text>
+    <path d="M355 198H550 M650 198H845" stroke="#b91c1c" stroke-width="3" stroke-dasharray="8 6"/>
+    <path d="M587 183L613 213M613 183L587 213" stroke="#b91c1c" stroke-width="5"/>
+    <text x="463" y="247" font-size="20" fill="#991b1b" font-weight="bold">Direct flow: 0/5 replies</text>
+    <text x="145" y="294" font-size="18">Hub NVA subnet 10.40.1.0/27</text><text x="524" y="294" font-size="18">peered with</text><text x="714" y="294" font-size="18">Spoke NVA subnet 10.60.0.0/27</text>
+    <rect x="35" y="350" width="1130" height="190" rx="12" fill="#f0fdf4" stroke="#166534" stroke-width="2"/>
+    <text x="60" y="387" font-size="23" font-weight="bold">Full VNet peering: 10.40.0.0/16 and 10.60.0.0/16</text>
+    <rect x="65" y="411" width="280" height="58" rx="8" fill="#eff6ff" stroke="#1e40af"/>
+    <text x="90" y="447" font-size="19">Same source 10.40.2.4</text>
+    <rect x="855" y="411" width="280" height="58" rx="8" fill="#eff6ff" stroke="#1e40af"/>
+    <text x="877" y="447" font-size="19">Same workload 10.60.1.4</text>
+    <path d="M355 440H840" stroke="#166534" stroke-width="4" marker-end="url(#arrow)"/>
+    <text x="454" y="498" font-size="20" fill="#166534" font-weight="bold">Direct flow: 5/5 replies</text>
+    <rect x="35" y="560" width="1130" height="84" rx="10" fill="#f1f5f9"/>
+    <text x="60" y="593" font-size="20" font-weight="bold">Both NVAs OFF (deallocated) throughout the direct comparison</text>
+    <text x="60" y="622" font-size="18">Restoring NVA-only subnet peering returns the same pair to 0/5. No endpoint /32 transit UDRs.</text>
+  </g>
+</svg>

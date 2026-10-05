@@ -1,0 +1,163 @@
+{
+  "created": [
+    {
+      "utc": "2026-10-05T08:13:10.390823+00:00",
+      "finishedAtUtc": "2026-10-05T08:13:16.038651+00:00",
+      "status": "succeeded",
+      "exitCode": 0,
+      "stderr": "",
+      "sourceFile": "G4/04-after-G4-nsg-hub-nva.json",
+      "output": {
+        "name": "nsg-hub-nva",
+        "testRules": [
+          {
+            "name": "Allow-PeeringEnforcement-ICMP",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [
+                "10.40.2.4/32",
+                "10.40.1.4/32",
+                "10.60.0.4/32",
+                "10.60.1.4/32"
+              ],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 105,
+              "protocol": "Icmp",
+              "provisioningState": "Succeeded",
+              "sourceAddressPrefixes": [
+                "10.40.2.4/32",
+                "10.40.1.4/32",
+                "10.60.0.4/32",
+                "10.60.1.4/32"
+              ],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "utc": "2026-10-05T08:13:29.141179+00:00",
+      "finishedAtUtc": "2026-10-05T08:13:33.255719+00:00",
+      "status": "succeeded",
+      "exitCode": 0,
+      "stderr": "",
+      "sourceFile": "G4/08-after-G4-vnet-sap-rise-snet-workload-nsg-swedencentral.json",
+      "output": {
+        "name": "vnet-sap-rise-snet-workload-nsg-swedencentral",
+        "testRules": [
+          {
+            "name": "Allow-PeeringEnforcement-ICMP",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [
+                "10.40.2.4/32",
+                "10.40.1.4/32",
+                "10.60.0.4/32",
+                "10.60.1.4/32"
+              ],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 105,
+              "protocol": "Icmp",
+              "provisioningState": "Succeeded",
+              "sourceAddressPrefixes": [
+                "10.40.2.4/32",
+                "10.40.1.4/32",
+                "10.60.0.4/32",
+                "10.60.1.4/32"
+              ],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "beforeRemoval": [
+    {
+      "utc": "2026-10-05T08:28:34.302441+00:00",
+      "finishedAtUtc": "2026-10-05T08:28:37.442279+00:00",
+      "status": "succeeded",
+      "exitCode": 0,
+      "stderr": "",
+      "sourceFile": "G13/01-before-G13-0.json",
+      "output": {
+        "name": "vnet-sap-rise-snet-workload-nsg-swedencentral",
+        "testRules": [
+          {
+            "name": "Allow-PeeringEnforcement-ICMP",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [
+                "10.40.2.4/32",
+                "10.40.1.4/32",
+                "10.60.0.4/32",
+                "10.60.1.4/32"
+              ],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 105,
+              "protocol": "Icmp",
+              "provisioningState": "Succeeded",
+              "sourceAddressPrefixes": [
+                "10.40.2.4/32",
+                "10.40.1.4/32",
+                "10.60.0.4/32",
+                "10.60.1.4/32"
+              ],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "utc": "2026-10-05T08:28:54.810473+00:00",
+      "finishedAtUtc": "2026-10-05T08:28:58.774919+00:00",
+      "status": "succeeded",
+      "exitCode": 0,
+      "stderr": "",
+      "sourceFile": "G13/05-before-G13-1.json",
+      "output": {
+        "name": "nsg-hub-nva",
+        "testRules": [
+          {
+            "name": "Allow-PeeringEnforcement-ICMP",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [
+                "10.40.2.4/32",
+                "10.40.1.4/32",
+                "10.60.0.4/32",
+                "10.60.1.4/32"
+              ],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 105,
+              "protocol": "Icmp",
+              "provisioningState": "Succeeded",
+              "sourceAddressPrefixes": [
+                "10.40.2.4/32",
+                "10.40.1.4/32",
+                "10.60.0.4/32",
+                "10.60.1.4/32"
+              ],
+              "sourcePortRange": "*",
+              "sourcePortRanges": []
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "qualification": "Creation and pre-removal snapshots, not separate per-phase NSG reads."
+}
