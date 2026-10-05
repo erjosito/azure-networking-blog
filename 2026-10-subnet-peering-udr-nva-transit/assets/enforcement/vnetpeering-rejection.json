@@ -1,0 +1,38 @@
+{
+  "request": {
+    "addressPrefix": "10.60.1.4/32",
+    "nextHopType": "VNetPeering"
+  },
+  "attempt": {
+    "utc": "2026-10-05T08:18:34.454144+00:00",
+    "finishedAtUtc": "2026-10-05T08:18:39.829482+00:00",
+    "status": "unknown",
+    "exitCode": 1,
+    "stderr": "ERROR: ({\"error\":{\"code\":\"InvalidRequestFormat\",\"message\":\"Cannot parse the request.\",\"details\":[{\"code\":\"InvalidJson\",\"message\":\"Error converting value \\\"VNetPeering\\\" to type 'Microsoft.WindowsAzure.Networking.Nrp.Frontend.Contract.Csm.Public.NextHopType'. Path 'properties.nextHopType', line 1, position 73.\"}]}})\n",
+    "sourceFile": "G8-add/02-G8-add-route.json",
+    "output": null
+  },
+  "reconciledSourceTable": {
+    "utc": "2026-10-05T08:19:55.584026+00:00",
+    "finishedAtUtc": "2026-10-05T08:19:59.339395+00:00",
+    "status": "succeeded",
+    "exitCode": 0,
+    "stderr": "",
+    "sourceFile": "collect-reconcile-rejection/01-reconcile-source-table.json",
+    "output": {
+      "name": "rt-enforcement-source",
+      "disableBgpRoutePropagation": true,
+      "routes": [],
+      "associatedSubnets": [
+        "snet-hub-test"
+      ]
+    }
+  },
+  "reconciliation": {
+    "utc": "2026-10-05T08:19:59.359253+00:00",
+    "outcome": "service-rejected-route-absent",
+    "writeReplayed": false
+  },
+  "httpStatus": null,
+  "httpStatusNote": "No numeric HTTP status was reported in the saved CLI stderr."
+}

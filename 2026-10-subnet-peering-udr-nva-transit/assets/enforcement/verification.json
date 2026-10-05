@@ -1,0 +1,67 @@
+{
+  "experiment": {
+    "verdict": "PASS_WITH_LIMITATIONS",
+    "narrowVerdict": "The same source 10.40.2.4 and workload 10.60.1.4 show scoped/full/restored ICMP delivery of 0/5, 5/5, 0/5. Full peering permits this tested direct flow without either NVA forwarding. Original saved configuration and power are restored.",
+    "protocol": "ICMP only",
+    "sameIdentitiesAcrossThreeStates": true,
+    "untested": [
+      "Direct-spoke-NVA-only bypass hypothesis: UNTESTED. Neither NVA forwarded in the tested direct control.",
+      "Reverse-direction initiated probe and reverse traceroute.",
+      "TCP/UDP/application traffic and universal enforcement across other endpoint pairs.",
+      "Independent per-state workload native guest-route snapshots."
+    ]
+  },
+  "restoration": {
+    "verdict": "PASS",
+    "scope": "Original ARM resource configuration, identities and saved final VM power state restored; no Azure calls or mutations performed by this verifier.",
+    "readWindowUtc": [
+      "2026-10-05T08:33:01.833985+00:00",
+      "2026-10-05T08:33:47.587337+00:00"
+    ],
+    "comparison": {
+      "rawUnequalLeafCount": 44,
+      "etagOnlyDifferences": 41,
+      "additionalServiceStateExclusionsNeeded": [],
+      "configurationDifferencesAfterMetadataNormalization": []
+    },
+    "diskOwnershipTimestampDifferences": 3,
+    "identities": {
+      "resourceCountOriginalAndFinal": 32,
+      "allResourceIdsEqual": true,
+      "counts": {
+        "vnets": 3,
+        "nics": 4,
+        "nsgs": 4,
+        "tables": 3,
+        "vms": 4,
+        "disks": 8,
+        "power": 4,
+        "resources": 32
+      },
+      "finalPower": {
+        "vm-ce-onprem": "VM deallocated",
+        "vm-hub-nva": "VM deallocated",
+        "vm-spoke-nva": "VM deallocated",
+        "vm-workload-probe": "VM deallocated"
+      }
+    },
+    "restoredPeering": {
+      "peerCompleteVnets": false,
+      "hubSubnet": "snet-hub-nva",
+      "hubPrefix": "10.40.1.0/27",
+      "spokeSubnet": "snet-spoke-nva",
+      "spokePrefix": "10.60.0.0/27",
+      "bothDirectionsConnectedAndFullyInSync": true
+    },
+    "cleanup": {
+      "G13": "Only the two Allow-PeeringEnforcement-ICMP test rules deleted; original NSG configurations restored.",
+      "G14": "vm-hub-test and osdisk-enforcement-hub-test deleted.",
+      "G15": "nic-hub-test, snet-hub-test and rt-enforcement-source deleted.",
+      "powerClose": "Original workload VM deallocated."
+    },
+    "limitations": [
+      "Point-in-time conclusion from saved final reads, not a fresh Azure observation.",
+      "Does not claim byte-identical disk contents or independent guest filesystem restoration."
+    ]
+  }
+}
