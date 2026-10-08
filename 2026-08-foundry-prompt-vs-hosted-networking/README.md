@@ -8,7 +8,23 @@
 
 ## The answer in one paragraph
 
-If you are designing the VNet, NSG, and DNS architecture for Azure AI Foundry agents, **the two agent types look nearly identical from your network's point of view**: both use addresses from the same delegated `AgentSubnet`, obey the same NSG rules and UDRs you apply to that subnet, traverse the same VNet peering to reach private tool endpoints, and share the same DNS forwarding chain — with DNS Private Resolver SNAT hiding the original caller type from your custom DNS server. The meaningful differences are operational, not topological: prompt agents invoke tools through a Microsoft-managed **data proxy** you cannot inspect or SSH into, while hosted agents run **your Python code** inside an ephemeral Micro VM with its own AgentSubnet NIC; this distinction changes the invocation URL, SDK surface, cold-start latency, egress source IP behaviour, and diagnostic method — but it does not create a second VNet integration to design or a second NSG policy to maintain.
+If you are designing the VNet, NSG, and DNS architecture for Azure AI Foundry agents, the two agent
+types look nearly identical **when they invoke registered Foundry tools**: Microsoft Learn now
+documents that prompt-agent and hosted-agent tool server calls both use the single-tenant **data
+proxy**. Both therefore use the delegated `AgentSubnet` and its NSGs, UDRs, peering, and DNS
+configuration. They are not network-equivalent overall. A hosted agent also runs **your Python
+code** inside an ephemeral Micro VM, and that code can make direct outbound calls through the Micro
+VM NIC instead of the data proxy. That additional path matters for service-specific ingress such as
+an Azure Function reachable only through an App Service Private Endpoint.
+
+> **Update, 2026-10-08:** The original post described the difference as mostly operational. A
+> Microsoft Foundry sample subsequently highlighted an important scope boundary: a Function with
+> `publicNetworkAccess: Disabled` returned `403 Ip Forbidden` when called as an OpenAPI tool through
+> the data proxy, while customer code on the VNet could use its Private Endpoint. The sample does not
+> compare prompt and hosted agents; it tests a prompt agent's OpenAPI tool. A hosted agent using the
+> same registered tool is expected to behave the same because it also uses the data proxy. Hosted
+> Python making the HTTP request directly uses the Micro VM path and is a distinct, still-unverified
+> case for that Function Private Endpoint.
 
 This post walks through four network paths (invocation ingress, prompt-tool egress, hosted-tool egress, and client-side function calling), the empirical evidence for each, and the practical differences that matter for a network engineer who has to deploy, secure, or troubleshoot Foundry agents in a private VNet.
 
@@ -55,8 +71,8 @@ Foundry injects its managed compute into a subnet you designate, delegated to `M
 | Aspect | Prompt agent | Hosted agent |
 |--------|-------------|-------------|
 | Code location | None — tools are OpenAPI endpoint declarations | Your `main.py`, running in a Micro VM |
-| Tool execution | Foundry data proxy calls the OpenAPI URL | Your Python `requests.get()` in the Micro VM |
-| Network egress | Data proxy IP from AgentSubnet | Micro VM NIC IP from same AgentSubnet |
+| Tool execution | Registered tools use the Foundry data proxy | Registered tools use the same data proxy; your Python can also call endpoints directly |
+| Network egress | Data proxy IP from AgentSubnet | Data proxy for registered tools; Micro VM NIC for direct Python calls |
 | Deployment unit | Configuration only (system prompt + OpenAPI JSON) | Source ZIP or container image |
 | Invocation protocol | Assistants API `/openai/v1/threads` then `/runs` | OpenAI Responses API stateless POST at `/agents/<name>/endpoint/protocols/openai/responses` |
 | SDK control plane | Portal only (as of `azure-ai-projects` 2.3.0) | `AIProjectClient.get_openai_client(agent_name=...)` |
@@ -104,9 +120,14 @@ The diagram below shows the full topology. Notice that **both** the data proxy a
 
 ## 3. The Four Packet Paths
 
-The diagram below compares three egress paths side by side. Diagram path 1 (prompt agent data proxy, **BASELINE from sibling lab 2026-08-14**) and diagram path 2 (hosted agent Toolbox routed through the data proxy, **PREDICTED/INFERRED — not tested in this lab**) both terminate at the data proxy before reaching the tool server. Diagram path 3 (hosted agent direct Python code, **CONFIRMED**) is where your Python code executes in the data path.
+The diagram below compares three egress paths side by side. Diagram path 1 (prompt agent data proxy,
+**BASELINE from sibling lab 2026-08-14**) and diagram path 2 (hosted agent Toolbox routed through
+the data proxy, **DOCUMENTED — not measured in this lab**) both terminate at the data proxy before
+reaching the tool server. Diagram path 3 (hosted agent direct Python code, **CONFIRMED**) is where
+your Python code executes in the data path. The diagram preserves its original evidence-status chip
+from the August 2026 lab; subsequent Microsoft Learn guidance explicitly documented path 2.
 
-![Three egress paths. Path 1 (prompt agent, BASELINE — sibling lab 2026-08-14, not re-run here): data proxy src_ip observed at target 192.168.0.49 and 192.168.0.239. Path 2 (hosted agent Toolbox via data proxy, PREDICTED/INFERRED — not tested in this lab): no measured src_ip available; routing through data proxy is inferred from architecture documentation, not empirically confirmed. Path 3 (hosted agent direct Python code, CONFIRMED): Micro VM NIC src_ip changes per invocation — REST runs .238/.28/.110, SDK runs .92/.142/.165, SSE stream .124 (seven successful observations); a fourth REST attempt was NSG-blocked with no src_ip recorded.](assets/03-agent-egress-paths.png)
+![Three egress paths. Path 1 (prompt agent, BASELINE — sibling lab 2026-08-14, not re-run here): data proxy src_ip observed at target 192.168.0.49 and 192.168.0.239. Path 2 (hosted agent Toolbox via data proxy, now documented but not measured in this lab): no measured src_ip available. Path 3 (hosted agent direct Python code, CONFIRMED): Micro VM NIC src_ip changes per invocation — REST runs .238/.28/.110, SDK runs .92/.142/.165, SSE stream .124 (seven successful observations); a fourth REST attempt was NSG-blocked with no src_ip recorded.](assets/03-agent-egress-paths.png)
 
 *[SVG](assets/03-agent-egress-paths.svg) · [Excalidraw source](assets/03-agent-egress-paths.excalidraw) · [Mermaid source](assets/03-agent-egress-paths.mmd)*
 
@@ -144,7 +165,10 @@ Foundry Tools Service
   Status: BASELINE from sibling lab (2026-08-14); not empirically re-run here.
 ```
 
-The data proxy cannot be configured, SSHed into, or inspected directly. Its existence is inferred from observed `src_ip` values and the [Foundry private networking docs](https://learn.microsoft.com/azure/foundry/how-to/configure-private-link). *(Inferred/undocumented internal architecture.)*
+The data proxy cannot be configured, SSHed into, or inspected directly. Its source addresses were
+observed in the sibling lab, and its role in both prompt and hosted registered-tool traffic is now
+documented in the [Foundry networking deep
+dive](https://learn.microsoft.com/azure/foundry/agents/concepts/agents-networking-deep-dive).
 
 ### Path 3 — Hosted-tool egress: Micro VM NIC to tool target
 
@@ -161,6 +185,34 @@ Hosted agent code (main.py, requests.get)
 ```
 
 The Micro VM NIC uses the **same AgentSubnet** and same DNS forwarding chain as the data proxy ([docs](https://learn.microsoft.com/azure/foundry/agents/how-to/deploy-hosted-agent-code)).
+
+### Private Endpoint scope boundary — Azure Functions full lockdown
+
+The lab's tool targets were directly routed VM addresses in a peered VNet. That result must not be
+generalized to every Private Link-enabled PaaS ingress path.
+
+The Microsoft Foundry sample's
+[Scenario 3](https://github.com/microsoft-foundry/foundry-samples/blob/main/infrastructure/infrastructure-setup-bicep/19-private-network-agent-tools/tests/TESTING-GUIDE.md#scenario-3-full-lockdown-customer-code-only-)
+describes an Azure Function with VNet Integration, an App Service Private Endpoint, and
+`publicNetworkAccess: Disabled`. Its prompt-agent OpenAPI tool receives `403 Ip Forbidden`: the
+data-proxy request is not recognized as arriving through the Function Private Endpoint. Customer
+code running on the VNet can call the Function privately.
+
+That result does not show a prompt-versus-hosted difference by itself:
+
+- The sample creates a `PromptAgentDefinition` with an `OpenApiTool`; it does not run hosted-agent
+  Python code.
+- A hosted agent using an OpenAPI/Toolbox tool should follow the same data-proxy path and encounter
+  the same limitation.
+- A hosted agent calling the Function directly with `requests` uses the Micro VM NIC and should have
+  the VNet/private-DNS context needed for the Private Endpoint. Neither this lab nor that sample
+  tested the exact hosted-direct-code-to-Function-PE combination, so it remains a follow-up test,
+  not a confirmed result.
+
+The sample's statement that the data proxy "cannot use Private Endpoints" is also too broad.
+Microsoft documents data-proxy access to private resources through Private Endpoints, and the sample
+itself validates private AI Search and internal Container Apps targets. The observed limitation is
+the Azure Functions/App Service Private Endpoint path in that OpenAPI-tool scenario.
 
 ### Path 4 — Client-side function calling: Caller executes tools directly
 
@@ -180,7 +232,9 @@ From vm-diag (inside VNet, deduced):
   src_ip at target: 192.168.2.4 (MgmtSubnet -- NOT AgentSubnet)
 ```
 
-This path proves the VNet isolation design: private tool targets require a VNet-internal egress path — hosted agent or data proxy. Client-side function calling from outside the VNet cannot reach private endpoints.
+This path proves the lab's VNet isolation design: the private `tools.lab` targets require a
+VNet-internal egress path. Client-side function calling from the workstation cannot resolve those
+custom private names.
 
 ---
 
@@ -188,7 +242,10 @@ This path proves the VNet isolation design: private tool targets require a VNet-
 
 ### Same subnet, same NSG, same peering
 
-Both the data proxy and the Micro VM NIC draw addresses from `AgentSubnet` (192.168.0.0/24). A single NSG on `AgentSubnet`, a single bidirectional VNet peering, and a single inbound NSG rule on the tool-target subnet cover both agent types. Rules 110 and 120 are identical for both — only 125 and 126 are hosted-agent-specific (deployment only):
+Both the data proxy and the Micro VM NIC draw addresses from `AgentSubnet` (192.168.0.0/24). For the
+directly routed VM targets in this lab, a single NSG on `AgentSubnet`, a single bidirectional VNet
+peering, and a single inbound NSG rule on the tool-target subnet cover both paths. Rules 110 and 120
+are identical for both — only 125 and 126 are hosted-agent-specific (deployment only):
 
 **AgentSubnet outbound rules (nsg-agentsubnet):**
 
@@ -451,6 +508,14 @@ The invocation diagram maps the full client-to-agent flow, including RBAC and pr
 - [ ] `AgentSubnet` outbound NSG: allow TCP 443 to `AzureActiveDirectory`
 - [ ] **Foundry Agent Consumer** RBAC role for the invoking identity at project scope
 - [ ] Source-code ZIP with `bundled` dependencies (recommended) or `remote_build`
+
+**When the tool target uses a Private Endpoint:**
+- [ ] Distinguish registered OpenAPI/MCP/Toolbox execution (data proxy) from hosted direct Python
+- [ ] Validate the target FQDN resolves to the expected Private Endpoint IP from the actual executor
+- [ ] For App Service or Azure Functions, verify the request arrives through the Private Endpoint;
+      a public-IP resolution commonly produces `403 Ip Forbidden` when public access is disabled
+- [ ] Do not assume a success against a routed VM or internal Container App proves every PaaS
+      Private Endpoint path
 
 **Do not:**
 - [ ] Allowlist individual source IPs for Micro VM tool calls — use the AgentSubnet CIDR
