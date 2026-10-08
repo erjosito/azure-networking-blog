@@ -15,6 +15,12 @@
   <https://learn.microsoft.com/azure/foundry/agents/how-to/deploy-hosted-agent-code>
   Documents `remote_build` vs `bundled` modes, MCR and AAD outbound requirements, and the Micro VM architecture.
 
+- **Deep dive into Foundry Agent Service networking**
+  <https://learn.microsoft.com/azure/foundry/agents/concepts/agents-networking-deep-dive>
+  Documents the key scope distinction: registered tool server calls use the single-tenant data
+  proxy regardless of agent type, while hosted-agent code uses the Micro VM NIC for its own outbound
+  traffic.
+
 - **Azure AI Foundry agents — hosted agents overview**
   <https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents-overview>
   Explains the Responses API protocol, agent lifecycle, and SDK invocation patterns.
@@ -54,3 +60,14 @@
 - **Azure Private Link overview** (PE + private DNS zone pattern used by Foundry account endpoint):
   <https://learn.microsoft.com/azure/private-link/private-link-overview>
 
+- **Use private endpoints for Azure App Service apps**
+  <https://learn.microsoft.com/azure/app-service/overview-private-endpoint>
+  Documents the `azurewebsites.net` to `privatelink.azurewebsites.net` DNS chain and the requirement
+  that clients resolve the app hostname to the Private Endpoint address.
+
+## Relevant Microsoft sample
+
+- **Private network agent tools — Scenario 3: Full lockdown**
+  <https://github.com/microsoft-foundry/foundry-samples/blob/main/infrastructure/infrastructure-setup-bicep/19-private-network-agent-tools/tests/TESTING-GUIDE.md#scenario-3-full-lockdown-customer-code-only->
+  Reports `403 Ip Forbidden` when a prompt-agent OpenAPI tool calls an Azure Function with
+  `publicNetworkAccess: Disabled`. The sample does not test hosted-agent direct Python egress.
