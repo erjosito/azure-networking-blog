@@ -1,10 +1,10 @@
 # One route table for AKS nodes and Application Gateway: no second table to maintain
 
-**Experiment captured on 9 October 2026.**
+Lab: tested 9 Oct; resources cleaned up 12 October 2026. [Cleanup evidence](https://github.com/erjosito/net-lab-builder/tree/main/labs/aks-agic-shared-udr/show-output/cleanup-20261012T0728Z).
 
 With kubenet, AKS writes a route per node so traffic can reach each node's pod CIDR. If Application Gateway (AGIC backends) sits in the same VNet, it needs those pod routes too. Associating **one shared route table** with both the AKS node subnet and the Application Gateway subnet lets the gateway use the routes AKS already maintains. A separate gateway table would need its own pod routes, kept in step with the nodes and pod CIDRs.
 
-That is the main point of this post. The experiment then shows what happens when the shared table is also used to steer Internet egress through an NVA: Azure rejected the plain default route, a split default was admitted but broke backend-health visibility, and a `GatewayManager → Internet` exception restored it. That part is a troubleshooting finding, not a supported design.
+The experiment also tested Internet egress via an NVA: Azure rejected a plain default route; split defaults hid backend health; adding `GatewayManager → Internet` restored health. These are troubleshooting observations, not a supported design.
 
 ## Who owns the routes?
 
@@ -86,7 +86,7 @@ Captured 9 October: rollout added `10.244.0.18` beside `10.244.0.14`; AGIC logge
 
 - Share the table to avoid maintaining pod routes twice; keep operator routes minimal because the gateway inherits them.
 - After a routing change, check admission, forwarding from the actual workload, and backend-health visibility separately.
-- Backend health recovered; that does not validate every Application Gateway control-plane function, long-term stability, logs, metrics, or public-client ingress and return path. Treatment was retained at the user's request, not restored to baseline.
+- Backend health recovered, but this does not validate all Application Gateway control-plane functions, stability, logs, metrics, or public-client ingress/return. Treatment remained through the experiment; the lab has since been cleaned up.
 
 **Not a production recommendation:** forcing Internet egress through an NVA is unsupported for non-isolated v2. Accepted `/1` routes and recovery with a `GatewayManager` exception are not support endorsements.
 

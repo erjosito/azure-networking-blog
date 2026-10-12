@@ -6,6 +6,9 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
+- **[2026-10] One route table for AKS nodes and Application Gateway**: A completed kubenet/AGIC lab shows how a shared table reuses AKS pod routes, then records the limits of steering gateway-subnet egress through an NVA; Azure resources were cleaned up after testing
+  - [Read post](./2026-10-aks-agic-shared-udr/)
+
 - **[2026-10] Azure subnet peering prevents the direct path that full VNet peering allows**: The same endpoint pair returns 0/5, 5/5, then 0/5 with both NVAs off; effective routes explain the direct-path boundary, with a separate two-NVA transit illustration
   - [Read post](./2026-10-subnet-peering-udr-nva-transit/)
 
