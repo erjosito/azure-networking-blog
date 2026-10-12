@@ -1,6 +1,6 @@
 # One route table for AKS nodes and Application Gateway: no second table to maintain
 
-**Draft for review. Experiment captured on 9 October 2026.**
+**Experiment captured on 9 October 2026.**
 
 With kubenet, AKS writes a route per node so traffic can reach each node's pod CIDR. If Application Gateway (AGIC backends) sits in the same VNet, it needs those pod routes too. Associating **one shared route table** with both the AKS node subnet and the Application Gateway subnet lets the gateway use the routes AKS already maintains. A separate gateway table would need its own pod routes, kept in step with the nodes and pod CIDRs.
 
@@ -65,6 +65,22 @@ from Internet to Application Gateway.
 The CLI exited with code 0. `Unknown` is not `Unhealthy`; command success and useful health data are separate checks.
 
 **Treatment.** With the control left intact, adding only `GatewayManager -> Internet` to the same table (no gateway, NSG, AKS or pod change) gave a first Healthy query at **13:13:31 UTC**, 4m 52s after admission at 13:08:39 UTC. A second query at 13:15:02 UTC confirmed it. **4m 52s is an observation upper bound, not exact convergence time.** Source-IP checks still returned the NVA address afterwards.
+
+## Scale-out check
+
+To check AGIC's response to a new replica:
+
+```powershell
+kubectl scale deployment web -n default --replicas=2
+kubectl rollout status deployment/web -n default --timeout=120s
+kubectl get pods -n default -l app=web -o wide
+kubectl get endpointslices -n default -l kubernetes.io/service-name=web -o wide
+kubectl logs -n kube-system -l app=ingress-appgw --tail=400 --timestamps
+az network application-gateway address-pool show -g rg-aks-agic-shared-udr --gateway-name agw1 -n pool-default-web-80-bp-80 -o json
+az network application-gateway show-backend-health -g rg-aks-agic-shared-udr -n agw1 -o json
+```
+
+Captured 9 October: rollout added `10.244.0.18` beside `10.244.0.14`; AGIC logged an applied configuration about 14 seconds after scale. The first valid pool query (~112 seconds after scale) showed both IPs; both later reported Healthy on public and private HTTP settings. This demonstrates configuration update and backend health, not full control-plane validation. Both pods were on one node; post-scale egress and pre/post route comparison were inconclusive. [Offline evidence and caveats](https://github.com/erjosito/net-lab-builder/blob/main/labs/aks-agic-shared-udr/show-output/scale-two-validation-20261009T1454Z/validation-verdict.md).
 
 ## Takeaways
 
