@@ -1,0 +1,9 @@
+flowchart LR
+    PA[Prompt agent<br/>registered OpenAPI] --> DP[Tools Service + data proxy<br/>192.168.0.99 / .80]
+    HT[Hosted agent<br/>registered Toolbox] --> DP
+    HD[Hosted Python<br/>requests] --> MV[Micro VM NIC<br/>192.168.0.138]
+    DP --> PE[Function Private Endpoint<br/>192.168.1.27]
+    MV --> PE
+    PE --> FN[Azure Function<br/>public access disabled<br/>HTTP 200]
+    WS[Workstation<br/>public DNS path] --> PUB[Public App Service frontend]
+    PUB --> DENY[403 Ip Forbidden]
