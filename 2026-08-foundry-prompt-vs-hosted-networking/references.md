@@ -45,6 +45,14 @@
   <https://learn.microsoft.com/python/api/overview/azure/ai-projects-readme>
   `AIProjectClient`, `AgentsOperations`, `get_openai_client` API surface.
 
+- **Use OpenAPI tools with Foundry Agent Service**
+  <https://learn.microsoft.com/azure/foundry/agents/how-to/tools/openapi-spec>
+  OpenAPI tool schema and authentication options used by the prompt-agent dependency probe.
+
+- **Foundry toolboxes**
+  <https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox>
+  Toolbox concepts and the hosted-agent MCP integration used to invoke the same OpenAPI operation.
+
 - **Azure managed identity and DefaultAzureCredential**
   <https://learn.microsoft.com/azure/developer/python/sdk/authentication-overview>
   Authentication chain used by hosted agents inside Micro VMs and by external callers.
@@ -70,4 +78,8 @@
 - **Private network agent tools — Scenario 3: Full lockdown**
   <https://github.com/microsoft-foundry/foundry-samples/blob/main/infrastructure/infrastructure-setup-bicep/19-private-network-agent-tools/tests/TESTING-GUIDE.md#scenario-3-full-lockdown-customer-code-only->
   Reports `403 Ip Forbidden` when a prompt-agent OpenAPI tool calls an Azure Function with
-  `publicNetworkAccess: Disabled`. The sample does not test hosted-agent direct Python egress.
+  `publicNetworkAccess: Disabled`. The current lab extension did not reproduce that result.
+
+- **Private network agent tools — template 19**
+  <https://github.com/microsoft-foundry/foundry-samples/tree/main/infrastructure/infrastructure-setup-bicep/19-private-network-agent-tools>
+  Current capability-host and VNet-injection baseline used to rebuild the extension environment.
