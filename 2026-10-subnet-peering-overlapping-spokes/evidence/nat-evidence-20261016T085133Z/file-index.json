@@ -1,0 +1,312 @@
+{
+  "excludes": [
+    "file-index.json",
+    "sha256-manifest.json"
+  ],
+  "files": [
+    {
+      "name": "after-vm-spoke1-isolated192.json",
+      "bytes": 7678
+    },
+    {
+      "name": "after-vm-spoke1-isolated192.txt",
+      "bytes": 10324
+    },
+    {
+      "name": "after-vm-spoke1-spoke10.json",
+      "bytes": 9114
+    },
+    {
+      "name": "after-vm-spoke1-spoke10.txt",
+      "bytes": 12335
+    },
+    {
+      "name": "after-vm-spoke2-isolated192.json",
+      "bytes": 7678
+    },
+    {
+      "name": "after-vm-spoke2-isolated192.txt",
+      "bytes": 10324
+    },
+    {
+      "name": "after-vm-spoke2-spoke10.json",
+      "bytes": 9107
+    },
+    {
+      "name": "after-vm-spoke2-spoke10.txt",
+      "bytes": 12328
+    },
+    {
+      "name": "after-vms.json",
+      "bytes": 8550
+    },
+    {
+      "name": "after-vms.txt",
+      "bytes": 10098
+    },
+    {
+      "name": "after-vnet-hub.json",
+      "bytes": 5463
+    },
+    {
+      "name": "after-vnet-hub.txt",
+      "bytes": 6472
+    },
+    {
+      "name": "after-vnet-spoke1.json",
+      "bytes": 4931
+    },
+    {
+      "name": "after-vnet-spoke1.txt",
+      "bytes": 5859
+    },
+    {
+      "name": "after-vnet-spoke2.json",
+      "bytes": 4931
+    },
+    {
+      "name": "after-vnet-spoke2.txt",
+      "bytes": 5859
+    },
+    {
+      "name": "before-vm-spoke1-isolated192.json",
+      "bytes": 7179
+    },
+    {
+      "name": "before-vm-spoke1-isolated192.txt",
+      "bytes": 9806
+    },
+    {
+      "name": "before-vm-spoke1-spoke10.json",
+      "bytes": 9114
+    },
+    {
+      "name": "before-vm-spoke1-spoke10.txt",
+      "bytes": 12336
+    },
+    {
+      "name": "before-vm-spoke2-isolated192.json",
+      "bytes": 7179
+    },
+    {
+      "name": "before-vm-spoke2-isolated192.txt",
+      "bytes": 9806
+    },
+    {
+      "name": "before-vm-spoke2-spoke10.json",
+      "bytes": 9108
+    },
+    {
+      "name": "before-vm-spoke2-spoke10.txt",
+      "bytes": 12330
+    },
+    {
+      "name": "before-vms.json",
+      "bytes": 8550
+    },
+    {
+      "name": "before-vms.txt",
+      "bytes": 10098
+    },
+    {
+      "name": "before-vnet-hub.json",
+      "bytes": 5463
+    },
+    {
+      "name": "before-vnet-hub.txt",
+      "bytes": 6472
+    },
+    {
+      "name": "before-vnet-spoke1.json",
+      "bytes": 4931
+    },
+    {
+      "name": "before-vnet-spoke1.txt",
+      "bytes": 5859
+    },
+    {
+      "name": "before-vnet-spoke2.json",
+      "bytes": 4931
+    },
+    {
+      "name": "before-vnet-spoke2.txt",
+      "bytes": 5859
+    },
+    {
+      "name": "collector-transport-interruption.json",
+      "bytes": 2364
+    },
+    {
+      "name": "effective-nsg-vm-hub-hub10.json",
+      "bytes": 1917
+    },
+    {
+      "name": "effective-nsg-vm-hub-hub10.txt",
+      "bytes": 2534
+    },
+    {
+      "name": "effective-nsg-vm-spoke1-isolated192.json",
+      "bytes": 1919
+    },
+    {
+      "name": "effective-nsg-vm-spoke1-isolated192.txt",
+      "bytes": 2545
+    },
+    {
+      "name": "effective-nsg-vm-spoke1-spoke10.json",
+      "bytes": 1919
+    },
+    {
+      "name": "effective-nsg-vm-spoke1-spoke10.txt",
+      "bytes": 2541
+    },
+    {
+      "name": "effective-nsg-vm-spoke2-isolated192.json",
+      "bytes": 1919
+    },
+    {
+      "name": "effective-nsg-vm-spoke2-isolated192.txt",
+      "bytes": 2545
+    },
+    {
+      "name": "effective-nsg-vm-spoke2-spoke10.json",
+      "bytes": 1919
+    },
+    {
+      "name": "effective-nsg-vm-spoke2-spoke10.txt",
+      "bytes": 2541
+    },
+    {
+      "name": "hub-vm-hub-hub10.json",
+      "bytes": 7498
+    },
+    {
+      "name": "hub-vm-hub-hub10.txt",
+      "bytes": 9098
+    },
+    {
+      "name": "inventory-final.json",
+      "bytes": 18151
+    },
+    {
+      "name": "inventory-final.txt",
+      "bytes": 20725
+    },
+    {
+      "name": "lease-final.json",
+      "bytes": 1219
+    },
+    {
+      "name": "lease-start.json",
+      "bytes": 1120
+    },
+    {
+      "name": "local-validation.json",
+      "bytes": 170
+    },
+    {
+      "name": "nics.json",
+      "bytes": 13823
+    },
+    {
+      "name": "nics.txt",
+      "bytes": 15592
+    },
+    {
+      "name": "os-process-idle.json",
+      "bytes": 135
+    },
+    {
+      "name": "process-idle.json",
+      "bytes": 665
+    },
+    {
+      "name": "routes-after-vm-hub-hub10.json",
+      "bytes": 10117
+    },
+    {
+      "name": "routes-after-vm-hub-hub10.txt",
+      "bytes": 12202
+    },
+    {
+      "name": "routes-after-vm-spoke1-isolated192.json",
+      "bytes": 9882
+    },
+    {
+      "name": "routes-after-vm-spoke1-isolated192.txt",
+      "bytes": 11936
+    },
+    {
+      "name": "routes-after-vm-spoke1-spoke10.json",
+      "bytes": 9882
+    },
+    {
+      "name": "routes-after-vm-spoke1-spoke10.txt",
+      "bytes": 11932
+    },
+    {
+      "name": "routes-after-vm-spoke2-isolated192.json",
+      "bytes": 9882
+    },
+    {
+      "name": "routes-after-vm-spoke2-isolated192.txt",
+      "bytes": 11936
+    },
+    {
+      "name": "routes-after-vm-spoke2-spoke10.json",
+      "bytes": 9882
+    },
+    {
+      "name": "routes-after-vm-spoke2-spoke10.txt",
+      "bytes": 11932
+    },
+    {
+      "name": "routes-before-vm-hub-hub10.json",
+      "bytes": 10117
+    },
+    {
+      "name": "routes-before-vm-hub-hub10.txt",
+      "bytes": 12202
+    },
+    {
+      "name": "routes-before-vm-spoke1-isolated192.json",
+      "bytes": 9882
+    },
+    {
+      "name": "routes-before-vm-spoke1-isolated192.txt",
+      "bytes": 11936
+    },
+    {
+      "name": "routes-before-vm-spoke1-spoke10.json",
+      "bytes": 9882
+    },
+    {
+      "name": "routes-before-vm-spoke1-spoke10.txt",
+      "bytes": 11932
+    },
+    {
+      "name": "routes-before-vm-spoke2-isolated192.json",
+      "bytes": 9882
+    },
+    {
+      "name": "routes-before-vm-spoke2-isolated192.txt",
+      "bytes": 11936
+    },
+    {
+      "name": "routes-before-vm-spoke2-spoke10.json",
+      "bytes": 9882
+    },
+    {
+      "name": "routes-before-vm-spoke2-spoke10.txt",
+      "bytes": 11932
+    },
+    {
+      "name": "summary.txt",
+      "bytes": 4583
+    },
+    {
+      "name": "verification.json",
+      "bytes": 31588
+    }
+  ]
+}

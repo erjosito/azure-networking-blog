@@ -1,0 +1,70 @@
+{
+  "value": [
+    {
+      "association": {},
+      "effectiveSecurityRules": [
+        {
+          "access": "Allow",
+          "destinationAddressPrefix": "0.0.0.0/0",
+          "destinationAddressPrefixes": [
+            "0.0.0.0/0",
+            "::/0"
+          ],
+          "destinationPortRange": "16001-16001",
+          "destinationPortRanges": [
+            "16001-16001"
+          ],
+          "direction": "Inbound",
+          "name": "defaultSecurityRules/AllowAzureLoadBalancerInbound",
+          "priority": 0,
+          "protocol": "All",
+          "sourceAddressPrefix": "AzureLoadBalancer",
+          "sourceAddressPrefixes": [
+            "AzureLoadBalancer"
+          ],
+          "sourcePortRange": "0-65535",
+          "sourcePortRanges": [
+            "0-65535"
+          ]
+        },
+        {
+          "access": "Allow",
+          "destinationAddressPrefix": "0.0.0.0/0",
+          "destinationAddressPrefixes": [
+            "0.0.0.0/0",
+            "::/0"
+          ],
+          "destinationPortRange": "0-65535",
+          "destinationPortRanges": [
+            "0-65535"
+          ],
+          "direction": "Inbound",
+          "name": "defaultSecurityRules/AllowVirtualNetwork",
+          "priority": 65534,
+          "protocol": "All",
+          "sourceAddressPrefix": "VirtualNetwork",
+          "sourceAddressPrefixes": [
+            "VirtualNetwork"
+          ],
+          "sourcePortRange": "0-65535",
+          "sourcePortRanges": [
+            "0-65535"
+          ]
+        }
+      ],
+      "networkSecurityGroup": {},
+      "tagMap": {
+        "AzureLoadBalancer": [
+          "168.63.129.16/32",
+          "fe80::1234:5678:9abc/128"
+        ],
+        "VirtualNetwork": [
+          "10.0.0.0/16",
+          "10.10.1.0/24",
+          "10.20.0.0/27",
+          "168.63.129.16/32"
+        ]
+      }
+    }
+  ]
+}

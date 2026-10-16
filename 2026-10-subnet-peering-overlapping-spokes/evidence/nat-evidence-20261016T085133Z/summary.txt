@@ -1,0 +1,38 @@
+FRESH RETAINED OVERLAPPING-SPOKE NAT EVIDENCE : PASS
+Capture: 2026-10-16T08:51:33Z through 08:59:24Z, Sweden Central.
+Resource group: rg-subnet-overlap-20261016-fde5ecf8. All five VMs remain running.
+No resource or guest configuration writes, deletions, restarts, deallocation, installations, or extra deployments.
+
+DECISIVE IDENTITY PROOF
+vm-spoke1-isolated192 and vm-spoke2-isolated192 each have EXACT SAME primary Azure NIC IP 192.168.1.4 and independently observed guest eth0 address 192.168.1.4/24.
+Their distinct Azure vmIds match their own guest IMDS vmIds/names; VM networkProfile binds each NIC. Guest hostnames, static markers/hashes, service units and localhost HTTP bodies are captured independently.
+See verification.json claims bothBackendsExactSameIPIndependentUniqueVMs and identityBinding-*; nics.json; before-vms.json; before-vm-spoke[12]-isolated192.json.
+
+HUB HTTP PROOF
+At 08:56:11Z hub 10.0.1.4 made three separate requests to each alias, recording source/destination socket endpoints, timestamps, status 200, and exact bodies including newline:
+10.10.1.10:8080 -> spoke1-backend-192.168.1.4\n
+10.20.0.10:8080 -> spoke2-backend-192.168.1.4\n
+Direct HTTP to 192.168.1.4:8080 timed out after 3 seconds: only a bounded negative HTTP control, NOT proof of all-protocol isolation.
+See hub-vm-hub-hub10.json.
+
+NAT MECHANISM AND EVIDENCE
+Unique aliases are secondary Azure NIC IP configurations and guest addresses. No UDR or proxy is involved.
+Each NVA PREROUTING rule DNATs hub source 10.0.1.4 addressed to its own alias into destination 192.168.1.4.
+Each POSTROUTING rule selectively SNATs that flow to its NVA primary, 10.10.1.4 or 10.20.0.4. Backend replies therefore target the local NVA; established connection tracking reverses both translations on return.
+On EACH NVA: DNAT +3, SNAT +3; request FORWARD +15 and established/reply FORWARD +15. Backend recent HTTP logs show the corresponding NVA primary as source.
+Full iptables-save -c before/after, rp_filter and forwarding sysctls, persistent NAT unit/script, enabled/active state, versions and route-get outputs are in before/after-vm-spoke[12]-spoke10.json.
+Connection-tracking table interfaces unavailable. tcpdump installed but optional capture omitted. No packet-level claim is made.
+
+CONTROL PLANE AND COVERAGE
+before/after-vnet-{hub,spoke1,spoke2}.json preserve API 2026-01-01 shapes: all three address spaces, five subnets, defaultOutboundAccess values, no subnet UDR/NSG, all four directed Connected/Succeeded subnet peerings, selectors and projected address spaces. Before/after fingerprints match.
+All five complete Azure effective-route tables, including default/inactive entries if returned, are routes-before/after-*.json; exact equality verified. Backend NICs DO show hub 10.0.1.0/24 VNetPeering route; isolated192 is a label, not an isolation proof.
+All five effective-NSG calls returned empty objects; this records API absence, not a security-policy PASS. NIC/subnet NSG associations independently absent.
+All five guest hostname, IPv4 addresses/routes/rules, cloud-init status, kernel, failed-service listing and selected IMDS name/vmId/location/vmSize captured. All service readiness checks pass; hub cloud-init has a completed/degraded schema-validation warning retained verbatim.
+VM image, SKU, OS disk metadata and NIC references are before/after-vms.json, omitting osProfile/customData/SSH keys. inventory-final.json scopes the full inventory to this resource group.
+
+PROVENANCE AND LIMITS
+Each live operation has JSON plus a .txt command/timestamp/exit/stdout/stderr record. Guest commands retain their own exact output and exit code; compressed guest transport decoded before sanitization. ARM RunCommand envelope is reduced to status plus decoded guest data, a known representation limitation.
+Current bundle only was inspected/sanitized; critical IP addresses and distinct VM identities retained. Subscription identifiers, credentials/key material and local user paths reduced; no old evidence tree imported.
+A local empty-output collector interruption is preserved in collector-transport-interruption.json; the same bounded capture continued with reduced concurrency. No live configuration repair occurred.
+Lease completed, queuedWork empty; Windows job children joined and OS PID checks confirm idle. See lease-final.json, process-idle.json and os-process-idle.json.
+file-index.json lists evidence files (excluding itself and hash manifest); sha256-manifest.json hashes every other file including index, excluding itself to avoid recursion.

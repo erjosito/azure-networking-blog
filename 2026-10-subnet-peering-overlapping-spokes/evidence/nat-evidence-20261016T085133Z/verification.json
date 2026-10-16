@@ -1,0 +1,1006 @@
+{
+  "verdict": "PASS",
+  "claims": {
+    "vnetsAndPeeringsUnchanged": {
+      "status": "PASS",
+      "files": [
+        "before-vnet-hub.json",
+        "before-vnet-spoke1.json",
+        "before-vnet-spoke2.json",
+        "after-vnet-hub.json",
+        "after-vnet-spoke1.json",
+        "after-vnet-spoke2.json"
+      ],
+      "details": null
+    },
+    "fourDirectedPeeringsConnected": {
+      "status": "PASS",
+      "files": [
+        "after-vnet-hub.json",
+        "after-vnet-spoke1.json",
+        "after-vnet-spoke2.json"
+      ],
+      "details": null
+    },
+    "allFiveVMsStillRunning": {
+      "status": "PASS",
+      "files": [
+        "before-vms.json",
+        "after-vms.json"
+      ],
+      "details": null
+    },
+    "noUDROrSubnetNSG": {
+      "status": "PASS",
+      "files": [
+        "after-vnet-hub.json",
+        "after-vnet-spoke1.json",
+        "after-vnet-spoke2.json"
+      ],
+      "details": null
+    },
+    "NICAddressesAliasesForwardingAndNoNSG": {
+      "status": "PASS",
+      "files": [
+        "nics.json"
+      ],
+      "details": null
+    },
+    "identityBinding-vm-hub-hub10": {
+      "status": "PASS",
+      "files": [
+        "hub-vm-hub-hub10.json",
+        "nics.json",
+        "before-vms.json"
+      ],
+      "details": null
+    },
+    "identityBinding-vm-spoke1-spoke10": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke1-spoke10.json",
+        "nics.json",
+        "before-vms.json"
+      ],
+      "details": null
+    },
+    "identityBinding-vm-spoke1-isolated192": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke1-isolated192.json",
+        "nics.json",
+        "before-vms.json"
+      ],
+      "details": null
+    },
+    "identityBinding-vm-spoke2-spoke10": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke2-spoke10.json",
+        "nics.json",
+        "before-vms.json"
+      ],
+      "details": null
+    },
+    "identityBinding-vm-spoke2-isolated192": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke2-isolated192.json",
+        "nics.json",
+        "before-vms.json"
+      ],
+      "details": null
+    },
+    "bothBackendsExactSameIPIndependentUniqueVMs": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke1-isolated192.json",
+        "before-vm-spoke2-isolated192.json",
+        "nics.json",
+        "before-vms.json"
+      ],
+      "details": [
+        {
+          "vm": "vm-spoke1-isolated192",
+          "vmId": "9e3ccf15-91e1-41ad-a721-c433a716e777",
+          "imds": {
+            "name": "vm-spoke1-isolated192",
+            "vmId": "9e3ccf15-91e1-41ad-a721-c433a716e777",
+            "location": "SwedenCentral",
+            "vmSize": "Standard_D2als_v6"
+          },
+          "guestHostname": "vm-spoke1-isolated192",
+          "AzurePrivateIP": "192.168.1.4",
+          "guestAddresses": "lo               UNKNOWN        127.0.0.1/8 \neth0             UP             192.168.1.4/24 metric 100 \n",
+          "localhostHttp": {
+            "startedAtUtc": "2026-10-16T08:54:51.776616+00:00",
+            "host": "127.0.0.1",
+            "port": 8080,
+            "timeoutSeconds": 3,
+            "localEndpoint": [
+              "127.0.0.1",
+              43656
+            ],
+            "remoteEndpoint": [
+              "127.0.0.1",
+              8080
+            ],
+            "status": 200,
+            "body": "spoke1-backend-192.168.1.4\n",
+            "completedAtUtc": "2026-10-16T08:54:51.777517+00:00"
+          },
+          "markerSha256": "d1621449fc7b63440f85aec4fe1724bfa0b45874743a264059974050a042432b"
+        },
+        {
+          "vm": "vm-spoke2-isolated192",
+          "vmId": "3d12d2b5-2a19-4b2d-b49d-b9a0378553ad",
+          "imds": {
+            "name": "vm-spoke2-isolated192",
+            "vmId": "3d12d2b5-2a19-4b2d-b49d-b9a0378553ad",
+            "location": "SwedenCentral",
+            "vmSize": "Standard_D2als_v6"
+          },
+          "guestHostname": "vm-spoke2-isolated192",
+          "AzurePrivateIP": "192.168.1.4",
+          "guestAddresses": "lo               UNKNOWN        127.0.0.1/8 \neth0             UP             192.168.1.4/24 metric 100 \n",
+          "localhostHttp": {
+            "startedAtUtc": "2026-10-16T08:55:33.678998+00:00",
+            "host": "127.0.0.1",
+            "port": 8080,
+            "timeoutSeconds": 3,
+            "localEndpoint": [
+              "127.0.0.1",
+              51432
+            ],
+            "remoteEndpoint": [
+              "127.0.0.1",
+              8080
+            ],
+            "status": 200,
+            "body": "spoke2-backend-192.168.1.4\n",
+            "completedAtUtc": "2026-10-16T08:55:33.679911+00:00"
+          },
+          "markerSha256": "10dd427f723fca04b886e40a2fdf007f36d65b4391fb7f42ee165a75f37184cc"
+        }
+      ]
+    },
+    "hubThreeExactHTTP200EachAlias": {
+      "status": "PASS",
+      "files": [
+        "hub-vm-hub-hub10.json"
+      ],
+      "details": [
+        {
+          "startedAtUtc": "2026-10-16T08:56:11.138131+00:00",
+          "host": "10.10.1.10",
+          "port": 8080,
+          "timeoutSeconds": 5,
+          "localEndpoint": [
+            "10.0.1.4",
+            42270
+          ],
+          "remoteEndpoint": [
+            "10.10.1.10",
+            8080
+          ],
+          "status": 200,
+          "body": "spoke1-backend-192.168.1.4\n",
+          "completedAtUtc": "2026-10-16T08:56:11.141912+00:00"
+        },
+        {
+          "startedAtUtc": "2026-10-16T08:56:11.141923+00:00",
+          "host": "10.10.1.10",
+          "port": 8080,
+          "timeoutSeconds": 5,
+          "localEndpoint": [
+            "10.0.1.4",
+            42278
+          ],
+          "remoteEndpoint": [
+            "10.10.1.10",
+            8080
+          ],
+          "status": 200,
+          "body": "spoke1-backend-192.168.1.4\n",
+          "completedAtUtc": "2026-10-16T08:56:11.143224+00:00"
+        },
+        {
+          "startedAtUtc": "2026-10-16T08:56:11.143232+00:00",
+          "host": "10.10.1.10",
+          "port": 8080,
+          "timeoutSeconds": 5,
+          "localEndpoint": [
+            "10.0.1.4",
+            42294
+          ],
+          "remoteEndpoint": [
+            "10.10.1.10",
+            8080
+          ],
+          "status": 200,
+          "body": "spoke1-backend-192.168.1.4\n",
+          "completedAtUtc": "2026-10-16T08:56:11.144337+00:00"
+        },
+        {
+          "startedAtUtc": "2026-10-16T08:56:11.144345+00:00",
+          "host": "10.20.0.10",
+          "port": 8080,
+          "timeoutSeconds": 5,
+          "localEndpoint": [
+            "10.0.1.4",
+            34814
+          ],
+          "remoteEndpoint": [
+            "10.20.0.10",
+            8080
+          ],
+          "status": 200,
+          "body": "spoke2-backend-192.168.1.4\n",
+          "completedAtUtc": "2026-10-16T08:56:11.147625+00:00"
+        },
+        {
+          "startedAtUtc": "2026-10-16T08:56:11.147633+00:00",
+          "host": "10.20.0.10",
+          "port": 8080,
+          "timeoutSeconds": 5,
+          "localEndpoint": [
+            "10.0.1.4",
+            34822
+          ],
+          "remoteEndpoint": [
+            "10.20.0.10",
+            8080
+          ],
+          "status": 200,
+          "body": "spoke2-backend-192.168.1.4\n",
+          "completedAtUtc": "2026-10-16T08:56:11.149825+00:00"
+        },
+        {
+          "startedAtUtc": "2026-10-16T08:56:11.149833+00:00",
+          "host": "10.20.0.10",
+          "port": 8080,
+          "timeoutSeconds": 5,
+          "localEndpoint": [
+            "10.0.1.4",
+            34830
+          ],
+          "remoteEndpoint": [
+            "10.20.0.10",
+            8080
+          ],
+          "status": 200,
+          "body": "spoke2-backend-192.168.1.4\n",
+          "completedAtUtc": "2026-10-16T08:56:11.155610+00:00"
+        }
+      ]
+    },
+    "NATCounterDeltas-vm-spoke1-spoke10": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke1-spoke10.json",
+        "after-vm-spoke1-spoke10.json"
+      ],
+      "details": {
+        "-A FORWARD -s 10.0.1.4/32 -d 192.168.1.4/32 -j ACCEPT": 15,
+        "-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT": 15,
+        "-A PREROUTING -s 10.0.1.4/32 -d 10.10.1.10/32 -j DNAT --to-destination 192.168.1.4": 3,
+        "-A POSTROUTING -s 10.0.1.4/32 -d 192.168.1.4/32 -j SNAT --to-source 10.10.1.4": 3
+      }
+    },
+    "backendLogsSNATSource-vm-spoke1-spoke10": {
+      "status": "PASS",
+      "files": [
+        "after-vm-spoke1-isolated192.json"
+      ],
+      "details": null
+    },
+    "NATCounterDeltas-vm-spoke2-spoke10": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke2-spoke10.json",
+        "after-vm-spoke2-spoke10.json"
+      ],
+      "details": {
+        "-A FORWARD -s 10.0.1.4/32 -d 192.168.1.4/32 -j ACCEPT": 15,
+        "-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT": 15,
+        "-A PREROUTING -s 10.0.1.4/32 -d 10.20.0.10/32 -j DNAT --to-destination 192.168.1.4": 3,
+        "-A POSTROUTING -s 10.0.1.4/32 -d 192.168.1.4/32 -j SNAT --to-source 10.20.0.4": 3
+      }
+    },
+    "backendLogsSNATSource-vm-spoke2-spoke10": {
+      "status": "PASS",
+      "files": [
+        "after-vm-spoke2-isolated192.json"
+      ],
+      "details": null
+    },
+    "effectiveRoutesUnchanged-vm-hub-hub10": {
+      "status": "PASS",
+      "files": [
+        "routes-before-vm-hub-hub10.json",
+        "routes-after-vm-hub-hub10.json"
+      ],
+      "details": null
+    },
+    "effectiveRoutesUnchanged-vm-spoke1-spoke10": {
+      "status": "PASS",
+      "files": [
+        "routes-before-vm-spoke1-spoke10.json",
+        "routes-after-vm-spoke1-spoke10.json"
+      ],
+      "details": null
+    },
+    "effectiveRoutesUnchanged-vm-spoke1-isolated192": {
+      "status": "PASS",
+      "files": [
+        "routes-before-vm-spoke1-isolated192.json",
+        "routes-after-vm-spoke1-isolated192.json"
+      ],
+      "details": null
+    },
+    "effectiveRoutesUnchanged-vm-spoke2-spoke10": {
+      "status": "PASS",
+      "files": [
+        "routes-before-vm-spoke2-spoke10.json",
+        "routes-after-vm-spoke2-spoke10.json"
+      ],
+      "details": null
+    },
+    "effectiveRoutesUnchanged-vm-spoke2-isolated192": {
+      "status": "PASS",
+      "files": [
+        "routes-before-vm-spoke2-isolated192.json",
+        "routes-after-vm-spoke2-isolated192.json"
+      ],
+      "details": null
+    },
+    "guestReadiness-vm-hub-hub10": {
+      "status": "PASS",
+      "files": [
+        "hub-vm-hub-hub10.json"
+      ],
+      "details": {
+        "cloudInit": "status: done\nextended_status: degraded done\nboot_status_code: enabled-by-generator\nlast_update: Thu, 01 Jan 1970 00:01:02 +0000\ndetail: DataSourceAzure [seed=/dev/sr0]\nerrors: []\nrecoverable_errors:\nWARNING:\n\t- cloud-config failed schema validation! You may run 'sudo cloud-init schema --system' to check the details.\n",
+        "failedServices": ""
+      }
+    },
+    "guestReadiness-vm-spoke1-spoke10": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke1-spoke10.json"
+      ],
+      "details": {
+        "cloudInit": "status: done\nextended_status: done\nboot_status_code: enabled-by-generator\nlast_update: Thu, 01 Jan 1970 00:01:06 +0000\ndetail: DataSourceAzure [seed=/dev/sr0]\nerrors: []\nrecoverable_errors: {}\n",
+        "failedServices": ""
+      }
+    },
+    "guestReadiness-vm-spoke1-isolated192": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke1-isolated192.json"
+      ],
+      "details": {
+        "cloudInit": "status: done\nextended_status: done\nboot_status_code: enabled-by-generator\nlast_update: Thu, 01 Jan 1970 00:00:57 +0000\ndetail: DataSourceAzure [seed=/dev/sr0]\nerrors: []\nrecoverable_errors: {}\n",
+        "failedServices": ""
+      }
+    },
+    "guestReadiness-vm-spoke2-spoke10": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke2-spoke10.json"
+      ],
+      "details": {
+        "cloudInit": "status: done\nextended_status: done\nboot_status_code: enabled-by-generator\nlast_update: Thu, 01 Jan 1970 00:01:08 +0000\ndetail: DataSourceAzure [seed=/dev/sr0]\nerrors: []\nrecoverable_errors: {}\n",
+        "failedServices": ""
+      }
+    },
+    "guestReadiness-vm-spoke2-isolated192": {
+      "status": "PASS",
+      "files": [
+        "before-vm-spoke2-isolated192.json"
+      ],
+      "details": {
+        "cloudInit": "status: done\nextended_status: done\nboot_status_code: enabled-by-generator\nlast_update: Thu, 01 Jan 1970 00:01:04 +0000\ndetail: DataSourceAzure [seed=/dev/sr0]\nerrors: []\nrecoverable_errors: {}\n",
+        "failedServices": ""
+      }
+    },
+    "OSChildrenIdle": {
+      "status": "PASS",
+      "files": [
+        "process-idle.json",
+        "os-process-idle.json",
+        "lease-final.json"
+      ]
+    }
+  },
+  "limitations": [
+    "TCP 8080 HTTP path only; negative direct HTTP control is not all-protocol isolation.",
+    "isolated192 is a label, not an isolation assertion; backend NIC hub routes are observed.",
+    "No packet capture performed; conntrack only when already available.",
+    "Read-only RunCommand ARM actions produce platform execution bookkeeping and HTTP logs.",
+    "Snapshots are sequential within bounded batches, not atomic.",
+    "RunCommand compressed transport decoded before sanitization; raw guest command outputs preserved.",
+    "Both NVA conntrack table/tool interfaces unavailable; symmetric return inferred from exact NAT rules, reply counters and backend source logs, not captured conntrack entries.",
+    "tcpdump is installed but optional packet capture deliberately omitted.",
+    "Hub cloud-init completed with a schema-validation warning; no failed systemd services observed.",
+    "RunCommand ARM envelope represented by selected status fields plus losslessly decoded guest command results; original compressed message not retained."
+  ],
+  "directNegativeControl": {
+    "startedAtUtc": "2026-10-16T08:56:11.155619+00:00",
+    "host": "192.168.1.4",
+    "port": 8080,
+    "timeoutSeconds": 3,
+    "error": "TimeoutError('timed out')",
+    "completedAtUtc": "2026-10-16T08:56:14.158811+00:00"
+  },
+  "effectiveRouteBestMatches": {
+    "vm-hub-hub10": {
+      "10.0.1.4": {
+        "addressPrefix": [
+          "10.0.0.0/16"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.10.1.10": {
+        "addressPrefix": [
+          "10.10.1.0/24"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VNetPeering",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.20.0.10": {
+        "addressPrefix": [
+          "10.20.0.0/27"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VNetPeering",
+        "source": "Default",
+        "state": "Active"
+      },
+      "192.168.1.4": {
+        "addressPrefix": [
+          "192.168.0.0/16"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "None",
+        "source": "Default",
+        "state": "Active"
+      }
+    },
+    "vm-spoke1-spoke10": {
+      "10.0.1.4": {
+        "addressPrefix": [
+          "10.0.1.0/24"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VNetPeering",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.10.1.10": {
+        "addressPrefix": [
+          "10.10.0.0/16"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.20.0.10": {
+        "addressPrefix": [
+          "10.0.0.0/8"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "None",
+        "source": "Default",
+        "state": "Active"
+      },
+      "192.168.1.4": {
+        "addressPrefix": [
+          "192.168.0.0/16"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      }
+    },
+    "vm-spoke1-isolated192": {
+      "10.0.1.4": {
+        "addressPrefix": [
+          "10.0.1.0/24"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VNetPeering",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.10.1.10": {
+        "addressPrefix": [
+          "10.10.0.0/16"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.20.0.10": {
+        "addressPrefix": [
+          "10.0.0.0/8"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "None",
+        "source": "Default",
+        "state": "Active"
+      },
+      "192.168.1.4": {
+        "addressPrefix": [
+          "192.168.0.0/16"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      }
+    },
+    "vm-spoke2-spoke10": {
+      "10.0.1.4": {
+        "addressPrefix": [
+          "10.0.1.0/24"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VNetPeering",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.10.1.10": {
+        "addressPrefix": [
+          "10.0.0.0/8"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "None",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.20.0.10": {
+        "addressPrefix": [
+          "10.20.0.0/26"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      },
+      "192.168.1.4": {
+        "addressPrefix": [
+          "192.168.0.0/16"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      }
+    },
+    "vm-spoke2-isolated192": {
+      "10.0.1.4": {
+        "addressPrefix": [
+          "10.0.1.0/24"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VNetPeering",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.10.1.10": {
+        "addressPrefix": [
+          "10.0.0.0/8"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "None",
+        "source": "Default",
+        "state": "Active"
+      },
+      "10.20.0.10": {
+        "addressPrefix": [
+          "10.20.0.0/26"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      },
+      "192.168.1.4": {
+        "addressPrefix": [
+          "192.168.0.0/16"
+        ],
+        "disableBgpRoutePropagation": false,
+        "nextHopIpAddress": [],
+        "nextHopType": "VnetLocal",
+        "source": "Default",
+        "state": "Active"
+      }
+    }
+  },
+  "effectiveNSGObservations": {
+    "vm-hub-hub10": {
+      "value": [
+        {
+          "association": {},
+          "effectiveSecurityRules": [
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "16001-16001",
+              "destinationPortRanges": [
+                "16001-16001"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowAzureLoadBalancerInbound",
+              "priority": 0,
+              "protocol": "All",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "sourceAddressPrefixes": [
+                "AzureLoadBalancer"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            },
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "0-65535",
+              "destinationPortRanges": [
+                "0-65535"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowVirtualNetwork",
+              "priority": 65534,
+              "protocol": "All",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourceAddressPrefixes": [
+                "VirtualNetwork"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            }
+          ],
+          "networkSecurityGroup": {},
+          "tagMap": {
+            "AzureLoadBalancer": [
+              "168.63.129.16/32",
+              "fe80::1234:5678:9abc/128"
+            ],
+            "VirtualNetwork": [
+              "10.0.0.0/16",
+              "10.10.1.0/24",
+              "10.20.0.0/27",
+              "168.63.129.16/32"
+            ]
+          }
+        }
+      ]
+    },
+    "vm-spoke1-spoke10": {
+      "value": [
+        {
+          "association": {},
+          "effectiveSecurityRules": [
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "16001-16001",
+              "destinationPortRanges": [
+                "16001-16001"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowAzureLoadBalancerInbound",
+              "priority": 0,
+              "protocol": "All",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "sourceAddressPrefixes": [
+                "AzureLoadBalancer"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            },
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "0-65535",
+              "destinationPortRanges": [
+                "0-65535"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowVirtualNetwork",
+              "priority": 65534,
+              "protocol": "All",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourceAddressPrefixes": [
+                "VirtualNetwork"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            }
+          ],
+          "networkSecurityGroup": {},
+          "tagMap": {
+            "AzureLoadBalancer": [
+              "168.63.129.16/32",
+              "fe80::1234:5678:9abc/128"
+            ],
+            "VirtualNetwork": [
+              "10.0.1.0/24",
+              "10.10.0.0/16",
+              "168.63.129.16/32",
+              "192.168.0.0/16"
+            ]
+          }
+        }
+      ]
+    },
+    "vm-spoke1-isolated192": {
+      "value": [
+        {
+          "association": {},
+          "effectiveSecurityRules": [
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "16001-16001",
+              "destinationPortRanges": [
+                "16001-16001"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowAzureLoadBalancerInbound",
+              "priority": 0,
+              "protocol": "All",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "sourceAddressPrefixes": [
+                "AzureLoadBalancer"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            },
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "0-65535",
+              "destinationPortRanges": [
+                "0-65535"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowVirtualNetwork",
+              "priority": 65534,
+              "protocol": "All",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourceAddressPrefixes": [
+                "VirtualNetwork"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            }
+          ],
+          "networkSecurityGroup": {},
+          "tagMap": {
+            "AzureLoadBalancer": [
+              "168.63.129.16/32",
+              "fe80::1234:5678:9abc/128"
+            ],
+            "VirtualNetwork": [
+              "10.0.1.0/24",
+              "10.10.0.0/16",
+              "168.63.129.16/32",
+              "192.168.0.0/16"
+            ]
+          }
+        }
+      ]
+    },
+    "vm-spoke2-spoke10": {
+      "value": [
+        {
+          "association": {},
+          "effectiveSecurityRules": [
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "16001-16001",
+              "destinationPortRanges": [
+                "16001-16001"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowAzureLoadBalancerInbound",
+              "priority": 0,
+              "protocol": "All",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "sourceAddressPrefixes": [
+                "AzureLoadBalancer"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            },
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "0-65535",
+              "destinationPortRanges": [
+                "0-65535"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowVirtualNetwork",
+              "priority": 65534,
+              "protocol": "All",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourceAddressPrefixes": [
+                "VirtualNetwork"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            }
+          ],
+          "networkSecurityGroup": {},
+          "tagMap": {
+            "AzureLoadBalancer": [
+              "168.63.129.16/32",
+              "fe80::1234:5678:9abc/128"
+            ],
+            "VirtualNetwork": [
+              "10.0.1.0/24",
+              "10.20.0.0/26",
+              "168.63.129.16/32",
+              "192.168.0.0/16"
+            ]
+          }
+        }
+      ]
+    },
+    "vm-spoke2-isolated192": {
+      "value": [
+        {
+          "association": {},
+          "effectiveSecurityRules": [
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "16001-16001",
+              "destinationPortRanges": [
+                "16001-16001"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowAzureLoadBalancerInbound",
+              "priority": 0,
+              "protocol": "All",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "sourceAddressPrefixes": [
+                "AzureLoadBalancer"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            },
+            {
+              "access": "Allow",
+              "destinationAddressPrefix": "0.0.0.0/0",
+              "destinationAddressPrefixes": [
+                "0.0.0.0/0",
+                "::/0"
+              ],
+              "destinationPortRange": "0-65535",
+              "destinationPortRanges": [
+                "0-65535"
+              ],
+              "direction": "Inbound",
+              "name": "defaultSecurityRules/AllowVirtualNetwork",
+              "priority": 65534,
+              "protocol": "All",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourceAddressPrefixes": [
+                "VirtualNetwork"
+              ],
+              "sourcePortRange": "0-65535",
+              "sourcePortRanges": [
+                "0-65535"
+              ]
+            }
+          ],
+          "networkSecurityGroup": {},
+          "tagMap": {
+            "AzureLoadBalancer": [
+              "168.63.129.16/32",
+              "fe80::1234:5678:9abc/128"
+            ],
+            "VirtualNetwork": [
+              "10.0.1.0/24",
+              "10.20.0.0/26",
+              "168.63.129.16/32",
+              "192.168.0.0/16"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "effectiveNSGLimitation": "Empty result is recorded, not a security-policy PASS.",
+  "completedAtUtc": "2026-10-16T08:59:25.043068+00:00",
+  "resourcesRetained": true,
+  "configurationMutations": 0,
+  "deleteOperations": 0,
+  "toolCallsUsed": 56
+}

@@ -1,0 +1,227 @@
+[
+  {
+    "hardwareProfile": {
+      "vmSize": "Standard_D2als_v6"
+    },
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-hub-hub10",
+    "location": "swedencentral",
+    "name": "vm-hub-hub10",
+    "networkProfile": {
+      "networkInterfaces": [
+        {
+          "deleteOption": "Detach",
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-hub-hub10-nic",
+          "primary": true,
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        }
+      ]
+    },
+    "powerState": "VM running",
+    "provisioningState": "Succeeded",
+    "storageProfile": {
+      "dataDisks": [],
+      "diskControllerType": "NVMe",
+      "imageReference": {
+        "exactVersion": "22.04.202610140",
+        "offer": "0001-com-ubuntu-server-jammy",
+        "publisher": "Canonical",
+        "sku": "22_04-lts-gen2",
+        "version": "latest"
+      },
+      "osDisk": {
+        "caching": "ReadWrite",
+        "createOption": "FromImage",
+        "deleteOption": "Detach",
+        "diskSizeGB": 30,
+        "managedDisk": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/disks/vm-hub-hub10-osdisk",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        "name": "vm-hub-hub10-osdisk",
+        "osType": "Linux"
+      }
+    },
+    "vmId": "3e39f947-0815-47dd-9d61-119b5c6db59a"
+  },
+  {
+    "hardwareProfile": {
+      "vmSize": "Standard_D2als_v6"
+    },
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-spoke1-isolated192",
+    "location": "swedencentral",
+    "name": "vm-spoke1-isolated192",
+    "networkProfile": {
+      "networkInterfaces": [
+        {
+          "deleteOption": "Detach",
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke1-isolated192-nic",
+          "primary": true,
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        }
+      ]
+    },
+    "powerState": "VM running",
+    "provisioningState": "Succeeded",
+    "storageProfile": {
+      "dataDisks": [],
+      "diskControllerType": "NVMe",
+      "imageReference": {
+        "exactVersion": "22.04.202610140",
+        "offer": "0001-com-ubuntu-server-jammy",
+        "publisher": "Canonical",
+        "sku": "22_04-lts-gen2",
+        "version": "latest"
+      },
+      "osDisk": {
+        "caching": "ReadWrite",
+        "createOption": "FromImage",
+        "deleteOption": "Detach",
+        "diskSizeGB": 30,
+        "managedDisk": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/disks/vm-spoke1-isolated192-osdisk",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        "name": "vm-spoke1-isolated192-osdisk",
+        "osType": "Linux"
+      }
+    },
+    "vmId": "9e3ccf15-91e1-41ad-a721-c433a716e777"
+  },
+  {
+    "hardwareProfile": {
+      "vmSize": "Standard_D2als_v6"
+    },
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-spoke1-spoke10",
+    "location": "swedencentral",
+    "name": "vm-spoke1-spoke10",
+    "networkProfile": {
+      "networkInterfaces": [
+        {
+          "deleteOption": "Detach",
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke1-spoke10-nic",
+          "primary": true,
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        }
+      ]
+    },
+    "powerState": "VM running",
+    "provisioningState": "Succeeded",
+    "storageProfile": {
+      "dataDisks": [],
+      "diskControllerType": "NVMe",
+      "imageReference": {
+        "exactVersion": "22.04.202610140",
+        "offer": "0001-com-ubuntu-server-jammy",
+        "publisher": "Canonical",
+        "sku": "22_04-lts-gen2",
+        "version": "latest"
+      },
+      "osDisk": {
+        "caching": "ReadWrite",
+        "createOption": "FromImage",
+        "deleteOption": "Detach",
+        "diskSizeGB": 30,
+        "managedDisk": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/disks/vm-spoke1-spoke10-osdisk",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        "name": "vm-spoke1-spoke10-osdisk",
+        "osType": "Linux"
+      }
+    },
+    "vmId": "b82e1918-7608-4c23-a4df-a6450cfee223"
+  },
+  {
+    "hardwareProfile": {
+      "vmSize": "Standard_D2als_v6"
+    },
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-spoke2-isolated192",
+    "location": "swedencentral",
+    "name": "vm-spoke2-isolated192",
+    "networkProfile": {
+      "networkInterfaces": [
+        {
+          "deleteOption": "Detach",
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke2-isolated192-nic",
+          "primary": true,
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        }
+      ]
+    },
+    "powerState": "VM running",
+    "provisioningState": "Succeeded",
+    "storageProfile": {
+      "dataDisks": [],
+      "diskControllerType": "NVMe",
+      "imageReference": {
+        "exactVersion": "22.04.202610140",
+        "offer": "0001-com-ubuntu-server-jammy",
+        "publisher": "Canonical",
+        "sku": "22_04-lts-gen2",
+        "version": "latest"
+      },
+      "osDisk": {
+        "caching": "ReadWrite",
+        "createOption": "FromImage",
+        "deleteOption": "Detach",
+        "diskSizeGB": 30,
+        "managedDisk": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/disks/vm-spoke2-isolated192-osdisk",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        "name": "vm-spoke2-isolated192-osdisk",
+        "osType": "Linux"
+      }
+    },
+    "vmId": "3d12d2b5-2a19-4b2d-b49d-b9a0378553ad"
+  },
+  {
+    "hardwareProfile": {
+      "vmSize": "Standard_D2als_v6"
+    },
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-spoke2-spoke10",
+    "location": "swedencentral",
+    "name": "vm-spoke2-spoke10",
+    "networkProfile": {
+      "networkInterfaces": [
+        {
+          "deleteOption": "Detach",
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke2-spoke10-nic",
+          "primary": true,
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        }
+      ]
+    },
+    "powerState": "VM running",
+    "provisioningState": "Succeeded",
+    "storageProfile": {
+      "dataDisks": [],
+      "diskControllerType": "NVMe",
+      "imageReference": {
+        "exactVersion": "22.04.202610140",
+        "offer": "0001-com-ubuntu-server-jammy",
+        "publisher": "Canonical",
+        "sku": "22_04-lts-gen2",
+        "version": "latest"
+      },
+      "osDisk": {
+        "caching": "ReadWrite",
+        "createOption": "FromImage",
+        "deleteOption": "Detach",
+        "diskSizeGB": 30,
+        "managedDisk": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/disks/vm-spoke2-spoke10-osdisk",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+          "storageAccountType": "StandardSSD_LRS"
+        },
+        "name": "vm-spoke2-spoke10-osdisk",
+        "osType": "Linux"
+      }
+    },
+    "vmId": "fff06e6f-e2d5-4e96-aac1-3c02ededc3d5"
+  }
+]

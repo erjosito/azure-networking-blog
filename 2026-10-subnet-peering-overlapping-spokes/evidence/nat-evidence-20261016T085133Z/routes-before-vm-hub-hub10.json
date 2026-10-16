@@ -1,0 +1,434 @@
+{
+  "value": [
+    {
+      "addressPrefix": [
+        "10.0.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "VnetLocal",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "10.10.1.0/24"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "VNetPeering",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "10.20.0.0/27"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "VNetPeering",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "0.0.0.0/0"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "Internet",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "10.0.0.0/8"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "127.0.0.0/8"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.96.0.0/11"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "172.16.0.0/12"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.64.0.0/12"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.80.0.0/13"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "25.176.0.0/13"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.92.0.0/14"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "25.4.0.0/14"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "25.152.0.0/14"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "25.184.0.0/14"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.90.0.0/15"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "25.148.0.0/15"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "198.18.0.0/15"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "192.168.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "25.150.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "25.156.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "25.159.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "40.109.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.88.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "104.147.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "157.59.0.0/16"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "40.108.0.0/17"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "104.146.0.0/17"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.128.0/17"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "23.103.0.0/18"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.0.0/18"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.96.0/19"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.80.0/20"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.64.0/21"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "20.35.252.0/22"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.72.0/22"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.78.0/23"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.76.0/24"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.77.128/25"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.77.0/26"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.77.64/27"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.77.112/28"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    },
+    {
+      "addressPrefix": [
+        "100.89.77.96/29"
+      ],
+      "disableBgpRoutePropagation": false,
+      "nextHopIpAddress": [],
+      "nextHopType": "None",
+      "source": "Default",
+      "state": "Active"
+    }
+  ]
+}

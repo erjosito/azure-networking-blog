@@ -1,0 +1,299 @@
+[
+  {
+    "auxiliaryMode": "None",
+    "auxiliarySku": "None",
+    "disableTcpStateTracking": false,
+    "dnsSettings": {
+      "appliedDnsServers": [],
+      "dnsServers": [],
+      "internalDomainNameSuffix": "<INTERNAL_DNS_SUFFIX_2>.cloudapp.net"
+    },
+    "enableAcceleratedNetworking": false,
+    "enableIPForwarding": false,
+    "etag": "W/\"48ba266f-5d75-4321-8617-210e718bb9ed\"",
+    "hostedWorkloads": [],
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-hub-hub10-nic",
+    "ipConfigurations": [
+      {
+        "etag": "W/\"48ba266f-5d75-4321-8617-210e718bb9ed\"",
+        "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-hub-hub10-nic/ipConfigurations/ipconfig1",
+        "name": "ipconfig1",
+        "primary": true,
+        "privateIPAddress": "10.0.1.4",
+        "privateIPAddressVersion": "IPv4",
+        "privateIPAllocationMethod": "Static",
+        "provisioningState": "Succeeded",
+        "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+        "subnet": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/virtualNetworks/hub/subnets/hub10",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        },
+        "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+      }
+    ],
+    "location": "swedencentral",
+    "macAddress": "7C-ED-8D-AD-B5-62",
+    "name": "vm-hub-hub10-nic",
+    "nicType": "Standard",
+    "primary": true,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+    "resourceGuid": "00b2f88d-1160-463c-9372-286e20df7a57",
+    "tags": {
+      "correlation_id": "nat-preflight-20261016T081812Z",
+      "created_by": "copilot-lab",
+      "lab": "true"
+    },
+    "tapConfigurations": [],
+    "type": "Microsoft.Network/networkInterfaces",
+    "virtualMachine": {
+      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-hub-hub10",
+      "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+    },
+    "vnetEncryptionSupported": false
+  },
+  {
+    "auxiliaryMode": "None",
+    "auxiliarySku": "None",
+    "disableTcpStateTracking": false,
+    "dnsSettings": {
+      "appliedDnsServers": [],
+      "dnsServers": [],
+      "internalDomainNameSuffix": "<INTERNAL_DNS_SUFFIX_3>.cloudapp.net"
+    },
+    "enableAcceleratedNetworking": false,
+    "enableIPForwarding": false,
+    "etag": "W/\"fb790ada-b136-4452-a7cb-b674b48fb1c9\"",
+    "hostedWorkloads": [],
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke1-isolated192-nic",
+    "ipConfigurations": [
+      {
+        "etag": "W/\"fb790ada-b136-4452-a7cb-b674b48fb1c9\"",
+        "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke1-isolated192-nic/ipConfigurations/ipconfig1",
+        "name": "ipconfig1",
+        "primary": true,
+        "privateIPAddress": "192.168.1.4",
+        "privateIPAddressVersion": "IPv4",
+        "privateIPAllocationMethod": "Static",
+        "provisioningState": "Succeeded",
+        "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+        "subnet": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/virtualNetworks/spoke1/subnets/isolated192",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        },
+        "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+      }
+    ],
+    "location": "swedencentral",
+    "macAddress": "7C-1E-52-40-5E-C4",
+    "name": "vm-spoke1-isolated192-nic",
+    "nicType": "Standard",
+    "primary": true,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+    "resourceGuid": "f391e2cb-515c-4315-9289-4d33e81b59f2",
+    "tags": {
+      "correlation_id": "nat-preflight-20261016T081812Z",
+      "created_by": "copilot-lab",
+      "lab": "true"
+    },
+    "tapConfigurations": [],
+    "type": "Microsoft.Network/networkInterfaces",
+    "virtualMachine": {
+      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-spoke1-isolated192",
+      "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+    },
+    "vnetEncryptionSupported": false
+  },
+  {
+    "auxiliaryMode": "None",
+    "auxiliarySku": "None",
+    "disableTcpStateTracking": false,
+    "dnsSettings": {
+      "appliedDnsServers": [],
+      "dnsServers": [],
+      "internalDomainNameSuffix": "<INTERNAL_DNS_SUFFIX_3>.cloudapp.net"
+    },
+    "enableAcceleratedNetworking": false,
+    "enableIPForwarding": true,
+    "etag": "W/\"8a75c3c1-a3a8-4b79-8e20-15617d58d390\"",
+    "hostedWorkloads": [],
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke1-spoke10-nic",
+    "ipConfigurations": [
+      {
+        "etag": "W/\"8a75c3c1-a3a8-4b79-8e20-15617d58d390\"",
+        "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke1-spoke10-nic/ipConfigurations/ipconfig1",
+        "name": "ipconfig1",
+        "primary": true,
+        "privateIPAddress": "10.10.1.4",
+        "privateIPAddressVersion": "IPv4",
+        "privateIPAllocationMethod": "Static",
+        "provisioningState": "Succeeded",
+        "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+        "subnet": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/virtualNetworks/spoke1/subnets/spoke10",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        },
+        "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+      },
+      {
+        "etag": "W/\"8a75c3c1-a3a8-4b79-8e20-15617d58d390\"",
+        "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke1-spoke10-nic/ipConfigurations/nat-alias",
+        "name": "nat-alias",
+        "primary": false,
+        "privateIPAddress": "10.10.1.10",
+        "privateIPAddressVersion": "IPv4",
+        "privateIPAllocationMethod": "Static",
+        "provisioningState": "Succeeded",
+        "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+        "subnet": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/virtualNetworks/spoke1/subnets/spoke10",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        },
+        "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+      }
+    ],
+    "location": "swedencentral",
+    "macAddress": "7C-1E-52-40-56-E7",
+    "name": "vm-spoke1-spoke10-nic",
+    "nicType": "Standard",
+    "primary": true,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+    "resourceGuid": "d0615998-e774-4e0f-85af-1a0db8e6915c",
+    "tags": {
+      "correlation_id": "nat-preflight-20261016T081812Z",
+      "created_by": "copilot-lab",
+      "lab": "true"
+    },
+    "tapConfigurations": [],
+    "type": "Microsoft.Network/networkInterfaces",
+    "virtualMachine": {
+      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-spoke1-spoke10",
+      "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+    },
+    "vnetEncryptionSupported": false
+  },
+  {
+    "auxiliaryMode": "None",
+    "auxiliarySku": "None",
+    "disableTcpStateTracking": false,
+    "dnsSettings": {
+      "appliedDnsServers": [],
+      "dnsServers": [],
+      "internalDomainNameSuffix": "<INTERNAL_DNS_SUFFIX_1>.cloudapp.net"
+    },
+    "enableAcceleratedNetworking": false,
+    "enableIPForwarding": false,
+    "etag": "W/\"6a7a2813-6166-42d6-b90d-22131a4fcdb3\"",
+    "hostedWorkloads": [],
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke2-isolated192-nic",
+    "ipConfigurations": [
+      {
+        "etag": "W/\"6a7a2813-6166-42d6-b90d-22131a4fcdb3\"",
+        "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke2-isolated192-nic/ipConfigurations/ipconfig1",
+        "name": "ipconfig1",
+        "primary": true,
+        "privateIPAddress": "192.168.1.4",
+        "privateIPAddressVersion": "IPv4",
+        "privateIPAllocationMethod": "Static",
+        "provisioningState": "Succeeded",
+        "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+        "subnet": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/virtualNetworks/spoke2/subnets/isolated192",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        },
+        "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+      }
+    ],
+    "location": "swedencentral",
+    "macAddress": "60-45-BD-FD-7D-51",
+    "name": "vm-spoke2-isolated192-nic",
+    "nicType": "Standard",
+    "primary": true,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+    "resourceGuid": "583e8bec-d9bf-41c9-9920-c5632b3e0322",
+    "tags": {
+      "correlation_id": "nat-preflight-20261016T081812Z",
+      "created_by": "copilot-lab",
+      "lab": "true"
+    },
+    "tapConfigurations": [],
+    "type": "Microsoft.Network/networkInterfaces",
+    "virtualMachine": {
+      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-spoke2-isolated192",
+      "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+    },
+    "vnetEncryptionSupported": false
+  },
+  {
+    "auxiliaryMode": "None",
+    "auxiliarySku": "None",
+    "disableTcpStateTracking": false,
+    "dnsSettings": {
+      "appliedDnsServers": [],
+      "dnsServers": [],
+      "internalDomainNameSuffix": "<INTERNAL_DNS_SUFFIX_1>.cloudapp.net"
+    },
+    "enableAcceleratedNetworking": false,
+    "enableIPForwarding": true,
+    "etag": "W/\"52e3c15b-bbb4-4abe-8c7c-38b514c6d7cd\"",
+    "hostedWorkloads": [],
+    "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke2-spoke10-nic",
+    "ipConfigurations": [
+      {
+        "etag": "W/\"52e3c15b-bbb4-4abe-8c7c-38b514c6d7cd\"",
+        "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke2-spoke10-nic/ipConfigurations/ipconfig1",
+        "name": "ipconfig1",
+        "primary": true,
+        "privateIPAddress": "10.20.0.4",
+        "privateIPAddressVersion": "IPv4",
+        "privateIPAllocationMethod": "Static",
+        "provisioningState": "Succeeded",
+        "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+        "subnet": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/virtualNetworks/spoke2/subnets/spoke10",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        },
+        "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+      },
+      {
+        "etag": "W/\"52e3c15b-bbb4-4abe-8c7c-38b514c6d7cd\"",
+        "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/networkInterfaces/vm-spoke2-spoke10-nic/ipConfigurations/nat-alias",
+        "name": "nat-alias",
+        "primary": false,
+        "privateIPAddress": "10.20.0.10",
+        "privateIPAddressVersion": "IPv4",
+        "privateIPAllocationMethod": "Static",
+        "provisioningState": "Succeeded",
+        "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+        "subnet": {
+          "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Network/virtualNetworks/spoke2/subnets/spoke10",
+          "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+        },
+        "type": "Microsoft.Network/networkInterfaces/ipConfigurations"
+      }
+    ],
+    "location": "swedencentral",
+    "macAddress": "7C-1E-52-22-26-97",
+    "name": "vm-spoke2-spoke10-nic",
+    "nicType": "Standard",
+    "primary": true,
+    "provisioningState": "Succeeded",
+    "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8",
+    "resourceGuid": "d43f44ab-8c2f-45e5-898e-407a0d612c75",
+    "tags": {
+      "correlation_id": "nat-preflight-20261016T081812Z",
+      "created_by": "copilot-lab",
+      "lab": "true"
+    },
+    "tapConfigurations": [],
+    "type": "Microsoft.Network/networkInterfaces",
+    "virtualMachine": {
+      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-subnet-overlap-20261016-fde5ecf8/providers/Microsoft.Compute/virtualMachines/vm-spoke2-spoke10",
+      "resourceGroup": "rg-subnet-overlap-20261016-fde5ecf8"
+    },
+    "vnetEncryptionSupported": false
+  }
+]

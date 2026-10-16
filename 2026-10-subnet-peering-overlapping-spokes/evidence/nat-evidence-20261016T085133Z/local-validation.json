@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "targetedAssertions": 20,
+  "scope": "identity binding negative controls; secret reduction; current correlation scan",
+  "externalCalls": 0
+}

@@ -6,6 +6,9 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
+- **[2026-10] Subnet peering: expose overlapping backends without extra transit VNets**: Two distinct backends keep the same IP while unique in-spoke NAT aliases avoid an extra transit VNet layer; HTTP, effective routes, and the complete 78-file evidence archive explain the tested path and cost caveats
+  - [Read post](./2026-10-subnet-peering-overlapping-spokes/)
+
 - **[2026-10] One route table for AKS nodes and Application Gateway**: A completed kubenet/AGIC lab shows how a shared table reuses AKS pod routes, then records the limits of steering gateway-subnet egress through an NVA; Azure resources were cleaned up after testing
   - [Read post](./2026-10-aks-agic-shared-udr/)
 
