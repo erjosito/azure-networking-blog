@@ -1,0 +1,212 @@
+{
+  "armStatus": [
+    {
+      "code": "ProvisioningState/succeeded",
+      "displayStatus": "Provisioning succeeded",
+      "level": "Info"
+    }
+  ],
+  "guest": {
+    "startedAtUtc": "2026-10-16T08:56:10.898471+00:00",
+    "target": "vm-hub-hub10",
+    "stage": "hub",
+    "commands": {
+      "hostname": {
+        "command": "hostname",
+        "atUtc": "2026-10-16T08:56:10.899791+00:00",
+        "exitCode": 0,
+        "stdout": "vm-hub-hub10\n",
+        "stderr": ""
+      },
+      "addresses": {
+        "command": "ip -br -4 addr",
+        "atUtc": "2026-10-16T08:56:10.901676+00:00",
+        "exitCode": 0,
+        "stdout": "lo               UNKNOWN        127.0.0.1/8 \neth0             UP             10.0.1.4/24 metric 100 \n",
+        "stderr": ""
+      },
+      "routes": {
+        "command": "ip -4 route show table all",
+        "atUtc": "2026-10-16T08:56:10.903549+00:00",
+        "exitCode": 0,
+        "stdout": "default via 10.0.1.1 dev eth0 proto dhcp src 10.0.1.4 metric 100 \n10.0.1.0/24 dev eth0 proto kernel scope link src 10.0.1.4 metric 100 \n10.0.1.1 dev eth0 proto dhcp scope link src 10.0.1.4 metric 100 \n168.63.129.16 via 10.0.1.1 dev eth0 proto dhcp src 10.0.1.4 metric 100 \n169.254.169.254 via 10.0.1.1 dev eth0 proto dhcp src 10.0.1.4 metric 100 \nlocal 10.0.1.4 dev eth0 table local proto kernel scope host src 10.0.1.4 \nbroadcast 10.0.1.255 dev eth0 table local proto kernel scope link src 10.0.1.4 \nlocal 127.0.0.0/8 dev lo table local proto kernel scope host src 127.0.0.1 \nlocal 127.0.0.1 dev lo table local proto kernel scope host src 127.0.0.1 \nbroadcast 127.255.255.255 dev lo table local proto kernel scope link src 127.0.0.1 \n",
+        "stderr": ""
+      },
+      "rules": {
+        "command": "ip -4 rule show",
+        "atUtc": "2026-10-16T08:56:10.905315+00:00",
+        "exitCode": 0,
+        "stdout": "0:\tfrom all lookup local\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default\n",
+        "stderr": ""
+      },
+      "cloudInit": {
+        "command": "cloud-init status --long",
+        "atUtc": "2026-10-16T08:56:11.090489+00:00",
+        "exitCode": 0,
+        "stdout": "status: done\nextended_status: degraded done\nboot_status_code: enabled-by-generator\nlast_update: Thu, 01 Jan 1970 00:01:02 +0000\ndetail: DataSourceAzure [seed=/dev/sr0]\nerrors: []\nrecoverable_errors:\nWARNING:\n\t- cloud-config failed schema validation! You may run 'sudo cloud-init schema --system' to check the details.\n",
+        "stderr": ""
+      },
+      "kernel": {
+        "command": "uname -a",
+        "atUtc": "2026-10-16T08:56:11.092158+00:00",
+        "exitCode": 0,
+        "stdout": "Linux vm-hub-hub10 6.8.0-1070-azure #78~22.04.1-Ubuntu SMP Thu Sep 24 18:46:45 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux\n",
+        "stderr": ""
+      },
+      "failedServices": {
+        "command": "systemctl --failed --no-pager --no-legend",
+        "atUtc": "2026-10-16T08:56:11.096381+00:00",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "routeHub": {
+        "command": "ip -4 route get 10.0.1.4",
+        "atUtc": "2026-10-16T08:56:11.098215+00:00",
+        "exitCode": 0,
+        "stdout": "local 10.0.1.4 dev lo src 10.0.1.4 uid 0 \n    cache <local> \n",
+        "stderr": ""
+      },
+      "routeBackend": {
+        "command": "ip -4 route get 192.168.1.4",
+        "atUtc": "2026-10-16T08:56:11.099951+00:00",
+        "exitCode": 0,
+        "stdout": "192.168.1.4 via 10.0.1.1 dev eth0 src 10.0.1.4 uid 0 \n    cache \n",
+        "stderr": ""
+      },
+      "routeAlias1": {
+        "command": "ip -4 route get 10.10.1.10",
+        "atUtc": "2026-10-16T08:56:11.101645+00:00",
+        "exitCode": 0,
+        "stdout": "10.10.1.10 via 10.0.1.1 dev eth0 src 10.0.1.4 uid 0 \n    cache \n",
+        "stderr": ""
+      },
+      "routeAlias2": {
+        "command": "ip -4 route get 10.20.0.10",
+        "atUtc": "2026-10-16T08:56:11.103450+00:00",
+        "exitCode": 0,
+        "stdout": "10.20.0.10 via 10.0.1.1 dev eth0 src 10.0.1.4 uid 0 \n    cache \n",
+        "stderr": ""
+      }
+    },
+    "imds": {
+      "name": "vm-hub-hub10",
+      "vmId": "3e39f947-0815-47dd-9d61-119b5c6db59a",
+      "location": "SwedenCentral",
+      "vmSize": "Standard_D2als_v6"
+    },
+    "http": [
+      {
+        "startedAtUtc": "2026-10-16T08:56:11.138131+00:00",
+        "host": "10.10.1.10",
+        "port": 8080,
+        "timeoutSeconds": 5,
+        "localEndpoint": [
+          "10.0.1.4",
+          42270
+        ],
+        "remoteEndpoint": [
+          "10.10.1.10",
+          8080
+        ],
+        "status": 200,
+        "body": "spoke1-backend-192.168.1.4\n",
+        "completedAtUtc": "2026-10-16T08:56:11.141912+00:00"
+      },
+      {
+        "startedAtUtc": "2026-10-16T08:56:11.141923+00:00",
+        "host": "10.10.1.10",
+        "port": 8080,
+        "timeoutSeconds": 5,
+        "localEndpoint": [
+          "10.0.1.4",
+          42278
+        ],
+        "remoteEndpoint": [
+          "10.10.1.10",
+          8080
+        ],
+        "status": 200,
+        "body": "spoke1-backend-192.168.1.4\n",
+        "completedAtUtc": "2026-10-16T08:56:11.143224+00:00"
+      },
+      {
+        "startedAtUtc": "2026-10-16T08:56:11.143232+00:00",
+        "host": "10.10.1.10",
+        "port": 8080,
+        "timeoutSeconds": 5,
+        "localEndpoint": [
+          "10.0.1.4",
+          42294
+        ],
+        "remoteEndpoint": [
+          "10.10.1.10",
+          8080
+        ],
+        "status": 200,
+        "body": "spoke1-backend-192.168.1.4\n",
+        "completedAtUtc": "2026-10-16T08:56:11.144337+00:00"
+      },
+      {
+        "startedAtUtc": "2026-10-16T08:56:11.144345+00:00",
+        "host": "10.20.0.10",
+        "port": 8080,
+        "timeoutSeconds": 5,
+        "localEndpoint": [
+          "10.0.1.4",
+          34814
+        ],
+        "remoteEndpoint": [
+          "10.20.0.10",
+          8080
+        ],
+        "status": 200,
+        "body": "spoke2-backend-192.168.1.4\n",
+        "completedAtUtc": "2026-10-16T08:56:11.147625+00:00"
+      },
+      {
+        "startedAtUtc": "2026-10-16T08:56:11.147633+00:00",
+        "host": "10.20.0.10",
+        "port": 8080,
+        "timeoutSeconds": 5,
+        "localEndpoint": [
+          "10.0.1.4",
+          34822
+        ],
+        "remoteEndpoint": [
+          "10.20.0.10",
+          8080
+        ],
+        "status": 200,
+        "body": "spoke2-backend-192.168.1.4\n",
+        "completedAtUtc": "2026-10-16T08:56:11.149825+00:00"
+      },
+      {
+        "startedAtUtc": "2026-10-16T08:56:11.149833+00:00",
+        "host": "10.20.0.10",
+        "port": 8080,
+        "timeoutSeconds": 5,
+        "localEndpoint": [
+          "10.0.1.4",
+          34830
+        ],
+        "remoteEndpoint": [
+          "10.20.0.10",
+          8080
+        ],
+        "status": 200,
+        "body": "spoke2-backend-192.168.1.4\n",
+        "completedAtUtc": "2026-10-16T08:56:11.155610+00:00"
+      }
+    ],
+    "directNegativeControl": {
+      "startedAtUtc": "2026-10-16T08:56:11.155619+00:00",
+      "host": "192.168.1.4",
+      "port": 8080,
+      "timeoutSeconds": 3,
+      "error": "TimeoutError('timed out')",
+      "completedAtUtc": "2026-10-16T08:56:14.158811+00:00"
+    },
+    "completedAtUtc": "2026-10-16T08:56:14.158833+00:00"
+  }
+}

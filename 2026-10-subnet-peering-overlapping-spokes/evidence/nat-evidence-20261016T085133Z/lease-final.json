@@ -1,0 +1,40 @@
+{
+  "taskId": "nat-evidence-20261016T085133Z",
+  "ownerRole": "Niobe",
+  "objective": "Fresh comprehensive read-only NAT identity and route evidence",
+  "createdAtUtc": "2026-10-16T08:51:33.928634+00:00",
+  "expiresAtUtc": "2026-10-16T09:16:33.928634+00:00",
+  "maxToolCalls": 75,
+  "maxMutations": 0,
+  "maxConfigurationMutations": 0,
+  "commandTimeoutSeconds": 180,
+  "runCommandTimeoutSeconds": 300,
+  "maxFiles": 80,
+  "restoreTimeoutMinutes": 0,
+  "state": "completed",
+  "retentionPolicy": "NEVER DELETE",
+  "configurationMutations": 0,
+  "allowedArmActions": [
+    "showEffectiveRouteTable",
+    "listEffectiveNetworkSecurityGroups",
+    "RunCommand read-only guest inspection and HTTP probes"
+  ],
+  "rollback": "No writes: retain all resources on any failure",
+  "forbiddenWork": [
+    "deployments",
+    "configuration writes",
+    "packages",
+    "delete",
+    "restart",
+    "deallocate",
+    "old evidence-tree import",
+    "nested agents"
+  ],
+  "runningChildren": [],
+  "queuedWork": [],
+  "toolCallsUsed": 56,
+  "lastCheckpointUtc": "2026-10-16T08:59:25.043194+00:00",
+  "verdict": "PASS",
+  "resourcesRetained": true,
+  "localCollectorTransportRecovery": true
+}

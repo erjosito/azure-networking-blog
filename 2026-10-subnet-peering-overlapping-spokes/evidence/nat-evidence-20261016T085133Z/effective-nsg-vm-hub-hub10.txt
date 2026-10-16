@@ -1,0 +1,17 @@
+{
+  "command": [
+    "az",
+    "network",
+    "nic",
+    "list-effective-nsg",
+    "-g",
+    "rg-subnet-overlap-20261016-fde5ecf8",
+    "-n",
+    "vm-hub-hub10-nic"
+  ],
+  "startedAtUtc": "2026-10-16T08:53:56.017952+00:00",
+  "completedAtUtc": "2026-10-16T08:54:10.516353+00:00",
+  "exitCode": 0,
+  "stdout": "{\r\n  \"value\": [\r\n    {\r\n      \"association\": {},\r\n      \"effectiveSecurityRules\": [\r\n        {\r\n          \"access\": \"Allow\",\r\n          \"destinationAddressPrefix\": \"0.0.0.0/0\",\r\n          \"destinationAddressPrefixes\": [\r\n            \"0.0.0.0/0\",\r\n            \"::/0\"\r\n          ],\r\n          \"destinationPortRange\": \"16001-16001\",\r\n          \"destinationPortRanges\": [\r\n            \"16001-16001\"\r\n          ],\r\n          \"direction\": \"Inbound\",\r\n          \"name\": \"defaultSecurityRules/AllowAzureLoadBalancerInbound\",\r\n          \"priority\": 0,\r\n          \"protocol\": \"All\",\r\n          \"sourceAddressPrefix\": \"AzureLoadBalancer\",\r\n          \"sourceAddressPrefixes\": [\r\n            \"AzureLoadBalancer\"\r\n          ],\r\n          \"sourcePortRange\": \"0-65535\",\r\n          \"sourcePortRanges\": [\r\n            \"0-65535\"\r\n          ]\r\n        },\r\n        {\r\n          \"access\": \"Allow\",\r\n          \"destinationAddressPrefix\": \"0.0.0.0/0\",\r\n          \"destinationAddressPrefixes\": [\r\n            \"0.0.0.0/0\",\r\n            \"::/0\"\r\n          ],\r\n          \"destinationPortRange\": \"0-65535\",\r\n          \"destinationPortRanges\": [\r\n            \"0-65535\"\r\n          ],\r\n          \"direction\": \"Inbound\",\r\n          \"name\": \"defaultSecurityRules/AllowVirtualNetwork\",\r\n          \"priority\": 65534,\r\n          \"protocol\": \"All\",\r\n          \"sourceAddressPrefix\": \"VirtualNetwork\",\r\n          \"sourceAddressPrefixes\": [\r\n            \"VirtualNetwork\"\r\n          ],\r\n          \"sourcePortRange\": \"0-65535\",\r\n          \"sourcePortRanges\": [\r\n            \"0-65535\"\r\n          ]\r\n        }\r\n      ],\r\n      \"networkSecurityGroup\": {},\r\n      \"tagMap\": {\r\n        \"AzureLoadBalancer\": [\r\n          \"168.63.129.16/32\",\r\n          \"fe80::1234:5678:9abc/128\"\r\n        ],\r\n        \"VirtualNetwork\": [\r\n          \"10.0.0.0/16\",\r\n          \"10.10.1.0/24\",\r\n          \"10.20.0.0/27\",\r\n          \"168.63.129.16/32\"\r\n        ]\r\n      }\r\n    }\r\n  ]\r\n}\r\n",
+  "stderr": ""
+}

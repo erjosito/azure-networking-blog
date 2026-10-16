@@ -1,0 +1,73 @@
+{
+  "verification": {
+    "verdict": "INCONCLUSIVE",
+    "claims": {},
+    "limitations": [
+      "TCP 8080 HTTP path only; negative direct HTTP control is not all-protocol isolation.",
+      "isolated192 is a label, not an isolation assertion; backend NIC hub routes are observed.",
+      "No packet capture performed; conntrack only when already available.",
+      "Read-only RunCommand ARM actions produce platform execution bookkeeping and HTTP logs.",
+      "Snapshots are sequential within bounded batches, not atomic.",
+      "RunCommand compressed transport decoded before sanitization; raw guest command outputs preserved."
+    ],
+    "error": "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')",
+    "completedAtUtc": "2026-10-16T08:52:23.503177+00:00",
+    "resourcesRetained": true,
+    "configurationMutations": 0,
+    "deleteOperations": 0,
+    "toolCallsUsed": 25
+  },
+  "failedCommands": {
+    "routes-before-vm-spoke1-isolated192.txt": {
+      "command": [
+        "az",
+        "network",
+        "nic",
+        "show-effective-route-table",
+        "-g",
+        "rg-subnet-overlap-20261016-fde5ecf8",
+        "-n",
+        "vm-spoke1-isolated192-nic"
+      ],
+      "startedAtUtc": "2026-10-16T08:52:10.105884+00:00",
+      "completedAtUtc": "2026-10-16T08:52:10.286972+00:00",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "routes-before-vm-spoke2-isolated192.txt": {
+      "command": [
+        "az",
+        "network",
+        "nic",
+        "show-effective-route-table",
+        "-g",
+        "rg-subnet-overlap-20261016-fde5ecf8",
+        "-n",
+        "vm-spoke2-isolated192-nic"
+      ],
+      "startedAtUtc": "2026-10-16T08:52:10.108731+00:00",
+      "completedAtUtc": "2026-10-16T08:52:10.289849+00:00",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "routes-before-vm-spoke2-spoke10.txt": {
+      "command": [
+        "az",
+        "network",
+        "nic",
+        "show-effective-route-table",
+        "-g",
+        "rg-subnet-overlap-20261016-fde5ecf8",
+        "-n",
+        "vm-spoke2-spoke10-nic"
+      ],
+      "startedAtUtc": "2026-10-16T08:52:10.112034+00:00",
+      "completedAtUtc": "2026-10-16T08:52:10.293236+00:00",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  }
+}
