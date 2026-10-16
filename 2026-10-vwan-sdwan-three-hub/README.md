@@ -11,7 +11,7 @@ That is a useful result, not an all-green reference design: DC-to-DC tests regre
 3. **Export protection:** can an Azure-learned route feed back into Azure?
 4. **Workload forwarding:** does the workload actually use the intended router on the return path?
 
-The measurements below were captured on **16 October 2026**. This post was written offline from those captures; no new cloud tests were run for publication. The [reference and evidence map](./references.md) links the complete BIRD configurations, paired firewall outputs, traffic results, and restoration verdicts. Source evidence publication is coordinated separately; those `main` links may remain unavailable until the companion lab-source change is merged.
+The measurements below were captured on **16 October 2026**. This post was written offline from those captures; no new cloud tests were run for publication. The [reference and evidence map](./references.md) links the complete BIRD configurations, paired firewall outputs, traffic results, and restoration verdicts. The companion [source report and captured evidence](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/README.md) are published in the public lab repository.
 
 ## The topology: two fabrics, three Azure attachments
 
@@ -207,7 +207,7 @@ At the same time, the captured Linux main table in both variants contains:
 10.110.0.0/24 via 169.254.21.6 dev xfrm42 proto bird metric 80
 ```
 
-These two lines are a compact rendering of the JSON kernel snapshot. A lookup for `10.10.0.10` also resolves through `169.254.21.6` on `xfrm42`. That supports the intended forwarding direction, but it does not erase the installation flag. Captured BIRD diagnostics include `strange next-hop` and `File exists`; the issue was not fully remediated, and these observations do not establish a definitive root cause.
+These two lines are a compact rendering of the JSON kernel snapshot. A lookup for `10.10.0.10` also resolves through `169.254.21.6` on `xfrm42`. That supports the intended forwarding direction, but it does not erase the installation flag. Captured BIRD diagnostics include `strange next-hop` and `File exists`; the underlying issue was **not remediated** in this experiment, and these observations do not establish a definitive root cause.
 
 ## The workload route table changes the traffic result
 

@@ -4,7 +4,9 @@
 
 Measurements: **16 October 2026**. The post uses the captured baseline and two captured policy states, not new publication-time testing. All addresses and ASNs shown are synthetic lab values.
 
-The companion source publication is handled separately. Links below target the intended public `main` paths and may not resolve until that source change is merged. The blog PR must remain unmerged until the source evidence is published and these links are checked.
+The companion source evidence was published through [net-lab-builder PR #12](https://github.com/erjosito/net-lab-builder/pull/12), merged as commit `7b29c8498a485fbd375e340e9dcea997fea7ad9b`. The links below target the public `main` paths.
+
+Start with the [source report: secured Virtual WAN backbone-first hub and NVA policy](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/README.md) for the companion evidence summary. Its forwarding result is explicitly partial: neither the report nor this post claims remediation of the kernel-installation warning or universal DC-to-DC success.
 
 The topology SVG is adapted from the source lab's `diagrams/topology.svg`. Its stale validation captions and unconditional export claim were replaced with topology-only descriptions. It is not a packet-flow trace.
 
