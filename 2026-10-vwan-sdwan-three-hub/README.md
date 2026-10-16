@@ -1,119 +1,64 @@
-# Virtual WAN backbone-first routing needs more than hub routing preference
+# Microsoft or customer backbone? Three Virtual WAN routing designs tested
 
-Your Azure Firewall can prefer the Virtual WAN backbone while your network virtual appliance still sends the same destination over its private mesh. Changing hub routing preference does not change the appliance's import filters, BGP local preference, or the workload's return route.
+Choosing a backbone is a two-sided routing decision. Azure must select the right exit from a secured Virtual WAN hub, and the customer router must select the intended onward path. Hub routing preference alone cannot align those decisions.
 
-That split was visible in this three-hub secured Virtual WAN lab. The EU and US firewalls selected Japan through a remote hub, but their BIRD routers still selected the direct WireGuard mesh. A combined Azure import, local-preference, and export policy changed the appliance selections. Adding a scoped Japan workload route table then made **Japan workload to EU Azure spoke, and EU Azure spoke to Japan workload, pass both TCP and ICMP probes**.
+This three-hub lab compares a Microsoft-backbone design with two customer-backbone approaches. **The Microsoft-backbone design selected remote hubs for the measured EU/Japan DC routes. The ASPath customer-backbone design selected local attachments and retained the customer mesh. The ExpressRoute-HRP customer-backbone attempt did not achieve that local selection at EU or US.** Only the Microsoft-backbone design has workload traffic measurements, and even those show DC-to-DC regressions.
 
-That is a useful result, not an all-green reference design: DC-to-DC tests regressed, and Japan's selected BIRD routes carried kernel-installation failure flags. The lesson is to align four decisions, then test both directions:
+**A means Microsoft backbone preferred. B1 and B2 are two approaches intended to prefer the customer backbone.**
 
-1. **Azure selection:** which attachment or remote hub wins after inspection?
-2. **NVA selection:** is the Azure route accepted, and does it beat the mesh?
-3. **Export protection:** can an Azure-learned route feed back into Azure?
-4. **Workload forwarding:** does the workload actually use the intended router on the return path?
-
-The measurements below were captured on **16 October 2026**. This post was written offline from those captures; no new cloud tests were run for publication. The [reference and evidence map](./references.md) links the complete BIRD configurations, paired firewall outputs, traffic results, and restoration verdicts. The companion [source report and captured evidence](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/README.md) are published in the public lab repository.
-
-## The topology: two fabrics, three Azure attachments
-
-![Three secured Azure hubs above a four-site WireGuard mesh, with ordinary peered-VNet BGP attachments in EU and US and an IPsec attachment in Japan](./assets/topology.svg)
-
-There are two distinct connectivity layers:
-
-- **Azure fabric:** Standard Virtual WAN hubs in West Europe, North Central US, and Japan East, each with a Standard Azure Firewall and **PrivateTraffic-only routing intent**. There is no Internet routing intent. The firewall policy permits the private TCP port `5201` and ICMP used by the probes.
-- **Private mesh:** four Linux/BIRD routers connected by six WireGuard links over a peered Azure VNet underlay. This models an inter-DC mesh. It is not the managed Virtual WAN interhub mesh.
-
-Here, BGP is Border Gateway Protocol, an ASN identifies a BGP autonomous system, and NVA means network virtual appliance. "DC" labels synthetic on-premises networks hosted in Azure for the experiment, not actual external data centers.
-
-| Site | Hub region | NVA ASN and address | Synthetic DC and probe | Azure spoke and probe | Azure attachment |
-|---|---|---|---|---|---|
-| EU | West Europe | `65011`, `10.210.0.4` in transit `10.210.0.0/24` | `10.110.0.0/24`, `10.110.0.10` | `10.10.0.0/24`, `10.10.0.10` | Peered-VNet `HubBgpConnection`, two eBGP peers |
-| US | North Central US | `65012`, `10.220.0.4` in transit `10.220.0.0/24` | `10.120.0.0/24`, `10.120.0.10` | `10.20.0.0/24`, `10.20.0.10` | Peered-VNet `HubBgpConnection`, two eBGP peers |
-| JP | Japan East | `65013`, `10.130.0.4` | `10.130.0.0/24`, `10.130.0.10` | `10.30.0.0/24`, `10.30.0.10` | Two strongSwan IPsec tunnels and two BGP peers |
-| CN | No attached hub; hosted in Japan East | `65014`, `10.140.0.4` | `10.140.0.0/24`, router doubles as probe `.4` | None | Mesh only, no direct Virtual WAN attachment |
-
-EU and US are **ordinary peered-VNet BGP-connected NVAs**, not integrated vendor SD-WAN appliances with VPN-gateway semantics. Japan uses Azure peers `169.254.21.2` and `169.254.21.6`, local BGP address `169.254.21.1`, and Linux XFRM interfaces `xfrm41` and `xfrm42`.
-
-The six unique mesh adjacencies plus six Azure-facing adjacencies make **12 unique BGP adjacencies**. The mesh is configured at both endpoints, so the four BIRD configurations contain **18 endpoint entries**, not 18 unique links. Virtual WAN's hub ASN is `65515`; interhub advertisements add `65520 65520`.
-
-**There is no ExpressRoute circuit in this lab.** `ExpressRoute` below is the name of a hub routing preference setting, not a description of deployed connectivity. "CN" is a logical site name, not a sovereign China region.
-
-### Read the diagram in three stages
-
-The same physical topology supports all three measured states:
-
-| State | Hub routing preference, EU / US / JP | NVA policy | Japan workload subnet UDR |
-|---|---|---|---|
-| Baseline | `ASPath` / `ASPath` / `ExpressRoute` | Azure imports only spokes; mesh regional-ingress preference retained | No route-table association |
-| NVA policy only | `ASPath` / `ASPath` / `ASPath` | Accept foreign DCs plus spokes from Azure at local preference `400`; preserve export guard; add JP nonlocal prepends | None |
-| NVA policy + JP UDR | `ASPath` / `ASPath` / `ASPath` | Same as previous state | Five prefixes to `10.130.0.4` |
-
-In the baseline, an appliance can choose a lower-diagram mesh link even while the firewall chooses the upper-diagram Azure interhub route. In the policy states, the BIRD selections move toward the Azure attachments. The UDR state additionally controls the Japan workload subnet's forwarding toward those selected routes. Arrows and route selections describe path intent, not packet-capture proof of physical traversal.
-
-## Baseline: the firewall and the appliance disagree
-
-Hub routing preference, or HRP, influences Azure's route selection. It does not reach into BIRD.
-
-The baseline had EU and US HRP set to `ASPath`, and Japan set to `ExpressRoute`. EU and US already added **three extra copies of their own ASN** when exporting an allowed DC route other than their own DC. Japan did not add those prepends.
-
-At both EU and US firewalls, the Japan DC prefix `10.130.0.0/24` won through **Remote Hub**, with AS path `65520-65520-65013`. At the Japan firewall, Japan's own prefix won through **VPN_S2S_Gateway**, path `65013`.
-
-But EU and US BIRD selected `mesh_jp`, path `65013`, local preference `100`, for that same Japan prefix. This was not simply BIRD ignoring a better Azure route: the original Azure-facing import filters **accepted only the three Azure spoke prefixes, not foreign DC prefixes**.
-
-On Japan, the EU spoke was accepted from Azure, but regional mesh policy preferred EU's mesh advertisement at local preference `300`. Other BGP routes used `100`.
-
-| Observation point | Destination | Baseline selected source | AS path | BGP local preference |
+| Design | Intended preference | Hub routing preference, all three hubs | NVA policy and extra prepends | Measured result |
 |---|---|---|---|---|
-| EU firewall | JP DC `10.130.0.0/24` | Remote Hub | `65520-65520-65013` | Not exposed here |
-| US firewall | JP DC `10.130.0.0/24` | Remote Hub | `65520-65520-65013` | Not exposed here |
-| JP firewall | EU DC `10.110.0.0/24` | VPN_S2S_Gateway | `65013-65011` | Not exposed here |
-| EU BIRD | JP DC `10.130.0.0/24` | `mesh_jp` | `65013` | `100` |
-| US BIRD | JP DC `10.130.0.0/24` | `mesh_jp` | `65013` | `100` |
-| JP BIRD | EU DC `10.110.0.0/24` | `mesh_eu` | `65011` | `100` |
-| JP BIRD | EU spoke `10.10.0.0/24` | `mesh_eu` | `65011 65515` | `300` |
+| **A** | Microsoft backbone | `ASPath` | Foreign DCs and spokes from Azure at LP `400`; three extra nonlocal DC export prepends on EU/US/JP | Remote-hub selections for the measured EU/Japan routes; JP workload and EU spoke TCP/ICMP pass both ways, but DC-to-DC failures remain |
+| **B1** | Customer backbone through ExpressRoute/VPN HRP | `ExpressRoute` tested; VPN HRP **not measured** | Azure imports only spokes; regional preference; two extra nonlocal DC prepends on EU/US, none on JP | EU/US still select remote Japan hub; **intended customer-backbone selection not demonstrated** |
+| **B2** | Customer backbone through ASPath and prepend control | `ASPath` | Same spoke-only import policy as B1; **zero extra** nonlocal DC prepends on EU/US, none on JP | Local EU/US BGP attachments and JP VPN win the measured DC choices; **route-control result only**, no new traffic tests |
 
-Here is the EU BIRD baseline excerpt:
+B2 is about controlling prepends, not adding them everywhere: removing the extra EU/US prepends makes the local offer shorter than the remote-hub alternative. A is a combined import, local-preference, export, and HRP design, not a prepend-only threshold experiment.
 
-```text
-10.130.0.0/24        unicast [mesh_jp 09:06:16.250 from 172.31.0.6] * (100) [AS65013i]
-	dev wgeujp
-	Type: BGP univ
-	BGP.origin: IGP
-	BGP.as_path: 65013
-	BGP.next_hop: 172.31.0.6
-	BGP.local_pref: 100
-```
+The [documented HRP ordering](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference) explains the intended distinction: **ExpressRoute and VPN prefer local-hub routes before comparing AS-path lengths; ASPath compares path length first and uses locality as a tie-breaker.** B1 tests the former approach, but its measured EU/US result below did not reproduce that intended local preference.
 
-### Count the automatic ASN, not just the explicit prepends
+All measurements are from **16 October 2026**. The [references and exact evidence map](./references.md) identify the three matched captures, including each design's complete EU, JP and CN BIRD configurations. The public [A/B comparison report](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-design-comparison-20261016/README.md) links the published source evidence.
 
-The baseline EU export of Japan's prefix showed:
+## One topology, two possible backbones
 
-```text
-BGP.as_path: 65011 65011 65011 65013
-```
+![Three secured Azure hubs and a separate four-site private WireGuard mesh](./assets/topology.svg)
 
-That is the path printed by BIRD's export view **before native eBGP inserts the local ASN**. The resulting wire advertisement contains four copies of `65011`, followed by `65013`, a total path length of five:
+The upper fabric is Azure Standard Virtual WAN: hubs in **West Europe, North Central US, and Japan East**, with one Standard Azure Firewall each. All three use **PrivateTraffic-only routing intent**, not Internet routing intent. The lower fabric is a full six-link WireGuard mesh between four Linux/BIRD routers, over a peered Azure VNet underlay. It models the customer inter-DC backbone; it is not the managed Azure interhub mesh.
 
-```text
-Explicit export view: 65011 65011 65011 65013
-eBGP wire path:       65011 65011 65011 65011 65013
-Remote hub path:      65520 65520 65013
-```
+BGP means Border Gateway Protocol, ASN identifies an autonomous system, NVA means network virtual appliance, and LP below is the explicit `BGP.local_pref` attribute. DC labels are synthetic on-premises networks modeled in Azure.
 
-US behaves equivalently with `65012`. Those existing prepends make the local re-advertisement longer than the remote Japan VPN-origin route in this baseline. They do not make the NVA import that remote route, and they do not override the NVA's local preference.
+| Site | Router / ASN | Synthetic DC / probe | Azure spoke / probe | Virtual WAN attachment |
+|---|---|---|---|---|
+| EU | `10.210.0.4`, ASN `65011`, transit `10.210.0.0/24` | `10.110.0.0/24`, `.10` | `10.10.0.0/24`, `.10` | Ordinary peered-VNet `HubBgpConnection`, two eBGP peers |
+| US | `10.220.0.4`, ASN `65012`, transit `10.220.0.0/24` | `10.120.0.0/24`, `.10` | `10.20.0.0/24`, `.10` | Ordinary peered-VNet `HubBgpConnection`, two eBGP peers |
+| JP | `10.130.0.4`, ASN `65013` | `10.130.0.0/24`, `.10` | `10.30.0.0/24`, `.10` | Two strongSwan IPsec tunnels and two eBGP peers |
+| CN | `10.140.0.4`, ASN `65014` | `10.140.0.0/24`, router `.4` also serves as probe | None | Customer mesh only |
 
-## The combined NVA policy: accept, prefer, protect
+EU/US are not integrated vendor SD-WAN VPN gateways. This describes their actual attachment, not a claim that a particular HRP mode is generally unsupported for NVAs. Japan's BGP local address is `169.254.21.1`; its Azure peers are `169.254.21.2` and `.6`, reached over `xfrm41` and `xfrm42`.
 
-Both policy variants set all three hubs to `ASPath`. The NVA changes are implemented in the reversible [`design_backbone.py`](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_backbone.py) transform.
+The logical CN site is hosted in Japan East, not sovereign China. It has **no direct Azure hub attachment** and must choose a mesh ingress. There is **no ExpressRoute circuit** in this lab: `ExpressRoute` is an HRP policy name. The hub ASN is `65515`; interhub advertisements add `65520 65520`.
 
-### 1. Accept foreign DCs from Azure, but never your own DC
+Six unique mesh adjacencies plus six Azure-facing adjacencies make **12 unique BGP adjacencies**, represented by **18 BIRD endpoint entries** because each customer mesh link is configured at both ends.
 
-Each of the three Azure-facing NVAs expands the import allowlist to include the **other three DC prefixes** and **all three spokes**. Its own DC remains excluded.
+### How to read the tables
 
-This is the EU import body, applied to both Azure peers:
+Each design includes the **entire EU and JP `table2.txt` firewall capture**, all ten entries, not just the destination that supports the headline. The displayed columns are the complete text capture's `Prefix`, `ASPath`, and `NextHopType`; full API JSON is linked in [references.md](./references.md).
+
+Each NVA table includes **all seven DC/spoke prefixes** from that design's `selected-routes.json`, checked against its raw BIRD route output. The next-hop column is the actual `BGP.next_hop`, including any import rewrite. **BIRD resolution** shows the gateway or interface resolved by BIRD, not proof of successful Linux kernel installation. `n/a` means the attribute is absent on a static `own_dc` route; `empty` represents a blank firewall AS path.
+
+`*` is the normal selected BIRD route marker. **`!` means the selected route has a kernel-export failure flag.** It is not a healthy-FIB success marker. These are selections and captured resolution, not packet-capture proof of physical traversal.
+
+## A: Microsoft backbone preferred
+
+The intended path is local workload or spoke, local Azure attachment, managed interhub backbone, remote attachment, and destination. To make that preference meaningful, the NVAs must accept and prefer Azure's foreign-DC routes rather than continuing to select their mesh.
+
+### A policy: accept Azure alternatives, prefer them, prevent feedback
+
+All three Azure-facing NVAs accept **foreign DC prefixes, never their own DC**, plus all three spokes. Accepted Azure routes get LP `400`. Existing next-hop rewriting, communities, own-route origination, and mesh policies remain in place.
+
+The captured EU Azure import body, used on both EU Azure peers, is:
 
 ```bird
-if net ~ [10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24,
-          10.10.0.0/24, 10.20.0.0/24, 10.30.0.0/24] then {
+if net ~ [10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24, 10.10.0.0/24, 10.20.0.0/24, 10.30.0.0/24] then {
   bgp_next_hop = 10.210.0.1;
   bgp_community = -empty-;
   bgp_community.add((65011, 1));
@@ -123,31 +68,32 @@ if net ~ [10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24,
 reject;
 ```
 
-The complete configurations matter: this is not a generic replacement filter to paste into any appliance. US retains its own next-hop rewriting and community handling. Japan retains the appropriate `169.254.21.2` or `.6` next hop for each Azure peer. Own-route origination and existing mesh policy remain unchanged.
+Japan's captured `azure_0` import body differs in the excluded own DC, next hop, and site community:
 
-### 2. Prefer Azure with local preference 400
-
-BGP local preference is a router's policy for ranking paths. Higher is preferred here. Setting imported Azure routes to `400` makes them outrank the regional mesh spoke preference of `300` and ordinary mesh routes at `100`, despite a longer AS path.
-
-For example, EU now selects:
-
-```text
-10.130.0.0/24        unicast [azure_0 10:21:01.098 from 10.250.0.69] * (100/?) [AS65013e]
-	via 10.210.0.1 on eth0
-	Type: BGP univ
-	BGP.origin: EGP
-	BGP.as_path: 65515 65520 65520 65013
-	BGP.next_hop: 10.210.0.1
-	BGP.local_pref: 400
+```bird
+if net ~ [10.110.0.0/24, 10.120.0.0/24, 10.140.0.0/24, 10.10.0.0/24, 10.20.0.0/24, 10.30.0.0/24] then {
+  bgp_next_hop = 169.254.21.2;
+  bgp_community = -empty-;
+  bgp_community.add((65013, 1));
+  bgp_local_pref = 400;
+  accept;
+}
+reject;
 ```
 
-The parenthesized `(100/?)` is **not** the `BGP.local_pref` value. Read the explicit attribute line.
+Japan's `azure_1` uses `169.254.21.6`. The shared regional mesh preference remains:
 
-### 3. Keep the export guard, and account for withdrawal
+```bird
+function regional_preference(int ingress) {
+  if (net = 10.10.0.0/24 && ingress = 65011) ||
+     (net = 10.20.0.0/24 && ingress = 65012) ||
+     (net = 10.30.0.0/24 && ingress = 65013) then
+    bgp_local_pref = 300;
+  else bgp_local_pref = 100;
+}
+```
 
-The existing Azure export guard permits DC routes only when their source is `own_dc` or `mesh_*`. It does **not** allow an `azure_*`-learned DC route to feed back into Azure.
-
-EU and US preserve their existing prepends. Japan adds three extra `65013` prepends for nonlocal DC exports:
+Thus Azure LP `400` outranks a regional spoke's mesh LP `300` and ordinary mesh LP `100`. EU/US/JP each add **three extra own-AS copies** to nonlocal DC exports, but not to their own DC. Japan's complete export filter is:
 
 ```bird
 filter azure_export {
@@ -164,100 +110,370 @@ filter azure_export {
 }
 ```
 
-**This creates an important experimental limitation.** Once an Azure-learned foreign DC route becomes the NVA's best route, the existing guard rejects that route for export back to Azure. Its previous local foreign-DC advertisement is withdrawn. The lower-priority mesh candidate can remain in BIRD without remaining advertised to Azure.
+EU uses the same guard, excludes its own `10.110.0.0/24` from prepending, and calls `bgp_path.prepend(65011)` three times. US applies the corresponding `65012` policy.
 
-Consequently, the observed final state is the result of **combined import, local-preference, export, and HRP policy**. It does not isolate a prepend-only effect, and it does not prove that two competing advertisements remain present at steady state. Keeping the mesh candidate is also not proof of usable backup: no failure or convergence test was performed.
+The **source guard matters to interpretation**. Only `own_dc` or `mesh_*` DC routes can be exported to Azure. Once an Azure-learned foreign DC route becomes best, its former local foreign-DC advertisement is suppressed by that guard. The remaining lower-priority mesh candidate does not imply that both Azure-facing advertisements remain present. **A measures combined policy, not an isolated prepend threshold**, and no fallback test was run.
 
-## Matched observations after the policy
+### A: complete EU firewall table
 
-Both policy variants captured the same selections below. Each state has two matching firewall snapshots; the NVA configurations, BIRD routes, exports, and traffic captures are preserved alongside them.
+| Prefix | ASPath | NextHopType |
+|---|---|---|
+| `10.110.0.0/24` | `65011` | HubBgpConnection |
+| `10.210.0.0/24` | empty | Virtual Network Connection |
+| `10.10.0.0/24` | empty | Virtual Network Connection |
+| `10.140.0.0/24` | `65011-65011-65011-65011-65014` | HubBgpConnection |
+| `10.130.0.0/24` | `65520-65520-65013` | Remote Hub |
+| `10.30.0.0/24` | `65520-65520` | Remote Hub |
+| `10.220.0.0/24` | `65520-65520` | Remote Hub |
+| `10.120.0.0/24` | `65520-65520-65012` | Remote Hub |
+| `10.20.0.0/24` | `65520-65520` | Remote Hub |
+| `0.0.0.0/0` | empty | Internet |
 
-| Observation point | Destination | Baseline | Both policy variants |
-|---|---|---|---|
-| EU firewall | JP DC | Remote Hub, `65520-65520-65013` | Remote Hub, `65520-65520-65013` |
-| US firewall | JP DC | Remote Hub, `65520-65520-65013` | Remote Hub, `65520-65520-65013` |
-| JP firewall | EU DC | VPN_S2S_Gateway, `65013-65011` | Remote Hub, `65520-65520-65011` |
-| EU BIRD | JP DC | `mesh_jp`, `65013`, LP `100` | `azure_0`, `65515 65520 65520 65013`, LP `400` |
-| US BIRD | JP DC | `mesh_jp`, `65013`, LP `100` | `azure_1`, `65515 65520 65520 65013`, LP `400` |
-| JP BIRD | EU DC | `mesh_eu`, `65011`, LP `100` | `azure_1`, `65515 65520 65520 65011`, LP `400`, **`!`** |
-| JP BIRD | EU spoke | `mesh_eu`, `65011 65515`, LP `300` | `azure_1`, `65515 65520 65520`, LP `400`, **`!`** |
+### A: complete JP firewall table
 
-Notice what did **not** change: EU and US firewalls already selected the remote Japan hub. The meaningful change there was on the appliance. The extra leading `65515` in BIRD is the Azure-facing eBGP hop; the firewall view and appliance view are different observation points, not contradictory AS paths.
+| Prefix | ASPath | NextHopType |
+|---|---|---|
+| `10.130.0.0/24` | `65013` | VPN_S2S_Gateway |
+| `10.140.0.0/24` | `65013-65013-65013-65013-65014` | VPN_S2S_Gateway |
+| `10.30.0.0/24` | empty | Virtual Network Connection |
+| `10.10.0.0/24` | `65520-65520` | Remote Hub |
+| `10.220.0.0/24` | `65520-65520` | Remote Hub |
+| `10.120.0.0/24` | `65520-65520-65012` | Remote Hub |
+| `10.20.0.0/24` | `65520-65520` | Remote Hub |
+| `10.210.0.0/24` | `65520-65520` | Remote Hub |
+| `10.110.0.0/24` | `65520-65520-65011` | Remote Hub |
+| `0.0.0.0/0` | empty | Internet |
 
-### Japan's `!` is a warning, not a success marker
+The default `Internet` rows are retained because these are full captures. Their presence is not evidence of Internet routing intent or an Internet traffic test.
 
-Japan's BIRD route excerpt in the policy-only state is:
+### A: EU selected NVA routes
 
-```text
-10.110.0.0/24        unicast [azure_1 10:23:04.846] ! (100/?) [AS65011e]
-	via 169.254.21.6 on xfrm42
-	Type: BGP univ
-	BGP.origin: EGP
-	BGP.as_path: 65515 65520 65520 65011
-	BGP.next_hop: 169.254.21.6
-	BGP.local_pref: 400
-```
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `own_dc` | n/a | via `10.210.0.1` on `eth0` | n/a | n/a | `*` |
+| `10.120.0.0/24` | `azure_0` | `10.210.0.1` | via `10.210.0.1` on `eth0` | `65515 65520 65520 65012` | 400 | `*` |
+| `10.130.0.0/24` | `azure_0` | `10.210.0.1` | via `10.210.0.1` on `eth0` | `65515 65520 65520 65013` | 400 | `*` |
+| `10.140.0.0/24` | `mesh_cn` | `172.31.0.10` | dev `wgeucn` | `65014` | 100 | `*` |
+| `10.10.0.0/24` | `azure_0` | `10.210.0.1` | via `10.210.0.1` on `eth0` | `65515` | 400 | `*` |
+| `10.20.0.0/24` | `azure_0` | `10.210.0.1` | via `10.210.0.1` on `eth0` | `65515 65520 65520` | 400 | `*` |
+| `10.30.0.0/24` | `azure_0` | `10.210.0.1` | via `10.210.0.1` on `eth0` | `65515 65520 65520` | 400 | `*` |
 
-The `!` denotes a **kernel-installation failure**, not an ordinary selected-route `*`. The capture parser explicitly handles both markers, but a selected BIRD route must not be equated with a healthy forwarding information base, or FIB.
+### A: JP selected NVA routes
 
-At the same time, the captured Linux main table in both variants contains:
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `azure_1` | `169.254.21.6` | via `169.254.21.6` on `xfrm42` | `65515 65520 65520 65011` | 400 | `!` |
+| `10.120.0.0/24` | `azure_1` | `169.254.21.6` | via `169.254.21.6` on `xfrm42` | `65515 65520 65520 65012` | 400 | `!` |
+| `10.130.0.0/24` | `own_dc` | n/a | dev `eth0` | n/a | n/a | `*` |
+| `10.140.0.0/24` | `mesh_cn` | `172.31.0.22` | dev `wgjpcn` | `65014` | 100 | `*` |
+| `10.10.0.0/24` | `azure_1` | `169.254.21.6` | via `169.254.21.6` on `xfrm42` | `65515 65520 65520` | 400 | `!` |
+| `10.20.0.0/24` | `azure_1` | `169.254.21.6` | via `169.254.21.6` on `xfrm42` | `65515 65520 65520` | 400 | `!` |
+| `10.30.0.0/24` | `azure_1` | `169.254.21.6` | via `169.254.21.6` on `xfrm42` | `65515` | 400 | `!` |
 
-```text
-10.10.0.0/24  via 169.254.21.6 dev xfrm42 proto bird metric 80
-10.110.0.0/24 via 169.254.21.6 dev xfrm42 proto bird metric 80
-```
+### A: CN selected NVA routes
 
-These two lines are a compact rendering of the JSON kernel snapshot. A lookup for `10.10.0.10` also resolves through `169.254.21.6` on `xfrm42`. That supports the intended forwarding direction, but it does not erase the installation flag. Captured BIRD diagnostics include `strange next-hop` and `File exists`; the underlying issue was **not remediated** in this experiment, and these observations do not establish a definitive root cause.
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `mesh_eu` | `172.31.0.9` | dev `wgeucn` | `65011` | 100 | `*` |
+| `10.120.0.0/24` | `mesh_us` | `172.31.0.17` | dev `wguscn` | `65012` | 100 | `*` |
+| `10.130.0.0/24` | `mesh_jp` | `172.31.0.21` | dev `wgjpcn` | `65013` | 100 | `*` |
+| `10.140.0.0/24` | `own_dc` | n/a | dev `eth0` | n/a | n/a | `*` |
+| `10.10.0.0/24` | `mesh_eu` | `172.31.0.9` | dev `wgeucn` | `65011 65515` | 300 | `*` |
+| `10.20.0.0/24` | `mesh_us` | `172.31.0.17` | dev `wguscn` | `65012 65515` | 300 | `*` |
+| `10.30.0.0/24` | `mesh_jp` | `172.31.0.21` | dev `wgjpcn` | `65013 65515` | 300 | `*` |
 
-## The workload route table changes the traffic result
+**US symmetry:** A's US firewall also selects JP through `Remote Hub`, path `65520-65520-65013`; its NVA selects `azure_1`, path `65515 65520 65520 65013`, LP `400`. The source captures include the complete US view.
 
-The second variant adds one temporary, experiment-owned user-defined route table to the Japan workload subnet. All five routes use next-hop type `VirtualAppliance` and next-hop address `10.130.0.4`:
+**CN is an explicit exception to an all-Microsoft interpretation.** EU and JP still select `mesh_cn` for the CN DC; their firewalls show local re-advertisements of CN. CN itself reaches each DC by its direct mesh peer and each Azure spoke through that spoke's regional mesh ingress at LP `300`. A is Microsoft-preferred for the measured directly attached regions, not a claim that every DC path uses the Microsoft backbone.
 
-| Destination | Purpose |
+### A's workload forwarding requirement and measured limits
+
+A includes a five-prefix Japan workload-subnet user-defined route table, or UDR. The next hop is `10.130.0.4` for EU DC `10.110.0.0/24`, US DC `10.120.0.0/24`, and spokes `10.10.0.0/24`, `10.20.0.0/24`, `10.30.0.0/24`. This is a workload-forwarding requirement in the measured design, not something HRP configures.
+
+The UDR deliberately excludes `10.140.0.0/24`: CN `.4` is a WireGuard outer transport endpoint, so redirecting that prefix back through the JP router on the shared subnet would loop outer transport. No IPsec or WireGuard configuration change is part of A's policy.
+
+The existing A traffic results are below. Each cell is **TCP / ICMP**. TCP means an HTTP `200` response from the synthetic private port `5201` listener, not a throughput benchmark. The firewall policy permits these private TCP and ICMP probes.
+
+| Source -> destination | A result |
 |---|---|
-| `10.110.0.0/24` | EU DC |
-| `10.120.0.0/24` | US DC |
-| `10.10.0.0/24` | EU spoke |
-| `10.20.0.0/24` | US spoke |
-| `10.30.0.0/24` | JP spoke |
+| EU spoke `10.10.0.10` -> JP workload `10.130.0.10` | PASS / PASS |
+| EU spoke `10.10.0.10` -> JP router `10.130.0.4` | PASS / PASS |
+| EU spoke `10.10.0.10` -> CN router `10.140.0.4` | PASS / PASS |
+| EU DC `10.110.0.10` -> JP workload `10.130.0.10` | **FAIL / FAIL** |
+| EU DC `10.110.0.10` -> JP router `10.130.0.4` | **FAIL / FAIL** |
+| JP workload `10.130.0.10` -> EU DC `10.110.0.10` | **FAIL / PASS** |
+| JP workload `10.130.0.10` -> EU spoke `10.10.0.10` | PASS / PASS |
 
-It deliberately **excludes `10.140.0.0/24`**. CN router `10.140.0.4` is also a WireGuard outer transport endpoint. Sending that prefix back to the Japan router with a shared workload-subnet UDR would loop the router's outer transport. Overlay payload policy must not accidentally redirect the overlay's own transport endpoint.
+The Japan workload and EU spoke passed in both initiated directions. **DC-to-DC regressions remain; this is not universal end-to-end success.** A router probe is not a substitute for its workload.
 
-No IPsec, strongSwan, or WireGuard configuration was changed. After capture, the original no-route-table association was restored and only the experiment's route table was deleted.
+Japan's `!` flags also remain unresolved. Captured kernel routes and lookups contain the intended XFRM paths, but BIRD diagnostics include `strange next-hop` and `File exists`. **The underlying kernel-export issue was not remediated.** Selected BIRD routes plus a successful probe do not establish an unconditionally healthy forwarding information base, or FIB, or a complete physical-path trace.
 
-### All seven directional probe cells
+## B1: customer backbone through ExpressRoute/VPN HRP
 
-Each cell below is **TCP / ICMP**. TCP was an HTTP probe to the private listener on port `5201`, not a throughput test. A router-address probe is not a substitute for a workload-address probe.
+The intended path from an Azure spoke to a foreign DC is local secured hub, local customer attachment, and customer mesh to the destination. B1 tests whether the HRP locality preference supplies that local exit while the NVAs retain the mesh.
 
-| Source -> destination | Baseline | NVA policy only | NVA policy + JP UDR |
-|---|---|---|---|
-| EU spoke `10.10.0.10` -> JP workload `10.130.0.10` | FAIL / FAIL | FAIL / FAIL | **PASS / PASS** |
-| EU spoke `10.10.0.10` -> JP router `10.130.0.4` | FAIL / PASS | PASS / PASS | PASS / PASS |
-| EU spoke `10.10.0.10` -> CN router `10.140.0.4` | FAIL / PASS | PASS / PASS | PASS / PASS |
-| EU DC `10.110.0.10` -> JP workload `10.130.0.10` | PASS / PASS | PASS / PASS | **FAIL / FAIL** |
-| EU DC `10.110.0.10` -> JP router `10.130.0.4` | PASS / PASS | **FAIL / FAIL** | FAIL / FAIL |
-| JP workload `10.130.0.10` -> EU DC `10.110.0.10` | PASS / PASS | PASS / PASS | **FAIL / PASS** |
-| JP workload `10.130.0.10` -> EU spoke `10.10.0.10` | FAIL / FAIL | FAIL / FAIL | **PASS / PASS** |
+**Only `ExpressRoute` HRP was measured**, on all three hubs. VPN HRP is an unmeasured alternative, not an equivalent validated result. EU/US use **two extra nonlocal DC prepends**, Japan none. B1 retains spoke-only Azure imports, so foreign DCs stay on the customer mesh inside the NVAs.
 
-The last column demonstrates the requested **modeled on-premises workload to Azure spoke direction**, as well as the reverse initiated direction, for Japan and EU. In those two successful TCP captures, the HTTP probe returned `200`.
+### B1 policy and the negative result
 
-It also shows why the result cannot be called a complete backbone-first design. The UDR variant loses the previously working EU DC to Japan workload cell, and Japan workload to EU DC retains only ICMP success. Even policy-only breaks EU DC to Japan router. Successful router probes and successful selected-route checks cannot hide those regressions.
+The captured EU Azure import body, shared with B2, is:
 
-Workload forwarding must align with the desired forward and return paths. The transition supports that design lesson; it does not supply full packet-trace proof of symmetry or prove the physical underlay traversed by every successful probe.
+```bird
+if net ~ [10.10.0.0/24, 10.20.0.0/24, 10.30.0.0/24] then {
+  bgp_next_hop = 10.210.0.1;
+  bgp_community = -empty-;
+  bgp_community.add((65011, 1));
+  regional_preference(65011);
+  accept;
+}
+reject;
+```
 
-## Collect the right routes in a secured hub
+The regional-preference function is the same one shown for A. EU's own spoke comes from Azure at LP `300`; foreign spokes can prefer their regional mesh ingress at LP `300` over a nonregional Azure import at `100`. Foreign DC imports from Azure are rejected.
 
-For an unsecured hub connection, use the hub effective-route API with the **`HubVirtualNetworkConnections`** resource type and the actual connection resource ID. In a secured hub with private routing intent, a connection view or a route pointing to the firewall is not the complete post-inspection answer.
+The EU B1 export filter is:
 
-For the firewall's onward destination choices, query the **owning hub** with the actual Azure Firewall resource ID and the **plural `AzureFirewalls`** resource type. This PowerShell command is the relevant diagnostic pattern:
+```bird
+filter azure_export {
+  if net ~ [10.110.0.0/24, 10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24] &&
+     (proto = "own_dc" || proto ~ "mesh_*") then {
+    if net != 10.110.0.0/24 then {
+      bgp_path.prepend(65011);
+      bgp_path.prepend(65011);
+    }
+        accept;
+  }
+  reject;
+}
+```
+
+US uses two `65012` prepends. JP's nonlocal exports have **no extra prepends**. In both B designs, Japan's `azure_0` import body is:
+
+```bird
+if net ~ [10.10.0.0/24, 10.20.0.0/24, 10.30.0.0/24] then {
+  bgp_next_hop = 169.254.21.2;
+  bgp_community = -empty-;
+  bgp_community.add((65013, 1));
+  regional_preference(65013);
+  accept;
+}
+reject;
+```
+
+Its `azure_1` uses `.6`. JP exports DCs with the same `own_dc` / `mesh_*` source guard, but no prepend statements.
+
+For Japan's prefix, BIRD's EU export view prints `65011 65011 65013`. Native eBGP automatically inserts one more local ASN, so the **offered local wire path** is:
+
+```text
+EU BIRD export view: 65011 65011 65013
+EU offered path:    65011 65011 65011 65013   (length 4)
+Remote hub path:    65520 65520 65013         (length 3)
+```
+
+**The remote Japan hub still wins at both EU and US.** The observed length difference is **one**, not two. The documented HRP race-condition caveat for a local route at least two entries longer does **not explain this observation**. The capture does not establish another root cause, an unsupported-NVA rule, or a universal ER/VPN behavior.
+
+### B1: complete EU firewall table
+
+| Prefix | ASPath | NextHopType |
+|---|---|---|
+| `10.110.0.0/24` | `65011` | HubBgpConnection |
+| `10.140.0.0/24` | `65011-65011-65011-65014` | HubBgpConnection |
+| `10.130.0.0/24` | `65520-65520-65013` | Remote Hub |
+| `10.30.0.0/24` | `65520-65520` | Remote Hub |
+| `10.220.0.0/24` | `65520-65520` | Remote Hub |
+| `10.120.0.0/24` | `65520-65520-65012` | Remote Hub |
+| `10.20.0.0/24` | `65520-65520` | Remote Hub |
+| `10.210.0.0/24` | empty | Virtual Network Connection |
+| `10.10.0.0/24` | empty | Virtual Network Connection |
+| `0.0.0.0/0` | empty | Internet |
+
+### B1: complete JP firewall table
+
+| Prefix | ASPath | NextHopType |
+|---|---|---|
+| `10.30.0.0/24` | empty | Virtual Network Connection |
+| `10.140.0.0/24` | `65013-65014` | VPN_S2S_Gateway |
+| `10.130.0.0/24` | `65013` | VPN_S2S_Gateway |
+| `10.110.0.0/24` | `65013-65011` | VPN_S2S_Gateway |
+| `10.120.0.0/24` | `65013-65012` | VPN_S2S_Gateway |
+| `10.10.0.0/24` | `65520-65520` | Remote Hub |
+| `10.220.0.0/24` | `65520-65520` | Remote Hub |
+| `10.20.0.0/24` | `65520-65520` | Remote Hub |
+| `10.210.0.0/24` | `65520-65520` | Remote Hub |
+| `0.0.0.0/0` | empty | Internet |
+
+### B1: EU selected NVA routes
+
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `own_dc` | n/a | via `10.210.0.1` on `eth0` | n/a | n/a | `*` |
+| `10.120.0.0/24` | `mesh_us` | `172.31.0.2` | dev `wgeuus` | `65012` | 100 | `*` |
+| `10.130.0.0/24` | `mesh_jp` | `172.31.0.6` | dev `wgeujp` | `65013` | 100 | `*` |
+| `10.140.0.0/24` | `mesh_cn` | `172.31.0.10` | dev `wgeucn` | `65014` | 100 | `*` |
+| `10.10.0.0/24` | `azure_0` | `10.210.0.1` | via `10.210.0.1` on `eth0` | `65515` | 300 | `*` |
+| `10.20.0.0/24` | `mesh_us` | `172.31.0.2` | dev `wgeuus` | `65012 65515` | 300 | `*` |
+| `10.30.0.0/24` | `mesh_jp` | `172.31.0.6` | dev `wgeujp` | `65013 65515` | 300 | `*` |
+
+### B1: JP selected NVA routes
+
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `mesh_eu` | `172.31.0.5` | dev `wgeujp` | `65011` | 100 | `*` |
+| `10.120.0.0/24` | `mesh_us` | `172.31.0.13` | dev `wgusjp` | `65012` | 100 | `*` |
+| `10.130.0.0/24` | `own_dc` | n/a | dev `eth0` | n/a | n/a | `*` |
+| `10.140.0.0/24` | `mesh_cn` | `172.31.0.22` | dev `wgjpcn` | `65014` | 100 | `*` |
+| `10.10.0.0/24` | `mesh_eu` | `172.31.0.5` | dev `wgeujp` | `65011 65515` | 300 | `*` |
+| `10.20.0.0/24` | `mesh_us` | `172.31.0.13` | dev `wgusjp` | `65012 65515` | 300 | `*` |
+| `10.30.0.0/24` | `azure_1` | `169.254.21.6` | via `169.254.21.6` on `xfrm42` | `65515` | 300 | `!` |
+
+### B1: CN selected NVA routes
+
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `mesh_eu` | `172.31.0.9` | dev `wgeucn` | `65011` | 100 | `*` |
+| `10.120.0.0/24` | `mesh_us` | `172.31.0.17` | dev `wguscn` | `65012` | 100 | `*` |
+| `10.130.0.0/24` | `mesh_jp` | `172.31.0.21` | dev `wgjpcn` | `65013` | 100 | `*` |
+| `10.140.0.0/24` | `own_dc` | n/a | dev `eth0` | n/a | n/a | `*` |
+| `10.10.0.0/24` | `mesh_eu` | `172.31.0.9` | dev `wgeucn` | `65011 65515` | 300 | `*` |
+| `10.20.0.0/24` | `mesh_us` | `172.31.0.17` | dev `wguscn` | `65012 65515` | 300 | `*` |
+| `10.30.0.0/24` | `mesh_jp` | `172.31.0.21` | dev `wgjpcn` | `65013 65515` | 300 | `*` |
+
+**US symmetry:** US retains the remote Japan winner `65520-65520-65013`, despite offering `65012-65012-65012-65013` locally. Japan's local VPN choices for EU/US do not turn this into a successful all-region customer-backbone result. The B1 verdict is `INCONCLUSIVE`, with the intended EU local-path assertion not met and restoration recorded as true. **No B1 traffic tests were run.**
+
+## B2: customer backbone through ASPath and prepend control
+
+B2 retains B1's spoke-only Azure import and regional mesh policy, but sets all three hubs to `ASPath` and removes EU/US extra nonlocal prepends. Japan still adds none.
+
+EU's captured export filter becomes:
+
+```bird
+filter azure_export {
+  if net ~ [10.110.0.0/24, 10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24] &&
+     (proto = "own_dc" || proto ~ "mesh_*") then {
+        accept;
+  }
+  reject;
+}
+```
+
+The source guard is unchanged. JP's no-prepend filter in B1 and B2 is:
+
+```bird
+filter azure_export {
+  if net ~ [10.110.0.0/24, 10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24] &&
+     (proto = "own_dc" || proto ~ "mesh_*") then accept;
+  reject;
+}
+```
+
+EU's BIRD export view of Japan is now just `65013`; automatic eBGP local-AS insertion produces `65011-65013`. At length two, that local offer is shorter than `65520-65520-65013` at length three. **The captured firewall selects the local `HubBgpConnection`**, while the EU NVA retains `mesh_jp`.
+
+### B2: complete EU firewall table
+
+| Prefix | ASPath | NextHopType |
+|---|---|---|
+| `10.110.0.0/24` | `65011` | HubBgpConnection |
+| `10.140.0.0/24` | `65011-65014` | HubBgpConnection |
+| `10.130.0.0/24` | `65011-65013` | HubBgpConnection |
+| `10.120.0.0/24` | `65011-65012` | HubBgpConnection |
+| `10.210.0.0/24` | empty | Virtual Network Connection |
+| `10.10.0.0/24` | empty | Virtual Network Connection |
+| `10.30.0.0/24` | `65520-65520` | Remote Hub |
+| `10.220.0.0/24` | `65520-65520` | Remote Hub |
+| `10.20.0.0/24` | `65520-65520` | Remote Hub |
+| `0.0.0.0/0` | empty | Internet |
+
+### B2: complete JP firewall table
+
+| Prefix | ASPath | NextHopType |
+|---|---|---|
+| `10.140.0.0/24` | `65013-65014` | VPN_S2S_Gateway |
+| `10.130.0.0/24` | `65013` | VPN_S2S_Gateway |
+| `10.110.0.0/24` | `65013-65011` | VPN_S2S_Gateway |
+| `10.120.0.0/24` | `65013-65012` | VPN_S2S_Gateway |
+| `10.10.0.0/24` | `65520-65520` | Remote Hub |
+| `10.220.0.0/24` | `65520-65520` | Remote Hub |
+| `10.20.0.0/24` | `65520-65520` | Remote Hub |
+| `10.210.0.0/24` | `65520-65520` | Remote Hub |
+| `10.30.0.0/24` | empty | Virtual Network Connection |
+| `0.0.0.0/0` | empty | Internet |
+
+### B2: EU selected NVA routes
+
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `own_dc` | n/a | via `10.210.0.1` on `eth0` | n/a | n/a | `*` |
+| `10.120.0.0/24` | `mesh_us` | `172.31.0.2` | dev `wgeuus` | `65012` | 100 | `*` |
+| `10.130.0.0/24` | `mesh_jp` | `172.31.0.6` | dev `wgeujp` | `65013` | 100 | `*` |
+| `10.140.0.0/24` | `mesh_cn` | `172.31.0.10` | dev `wgeucn` | `65014` | 100 | `*` |
+| `10.10.0.0/24` | `azure_0` | `10.210.0.1` | via `10.210.0.1` on `eth0` | `65515` | 300 | `*` |
+| `10.20.0.0/24` | `mesh_us` | `172.31.0.2` | dev `wgeuus` | `65012 65515` | 300 | `*` |
+| `10.30.0.0/24` | `mesh_jp` | `172.31.0.6` | dev `wgeujp` | `65013 65515` | 300 | `*` |
+
+### B2: JP selected NVA routes
+
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `mesh_eu` | `172.31.0.5` | dev `wgeujp` | `65011` | 100 | `*` |
+| `10.120.0.0/24` | `mesh_us` | `172.31.0.13` | dev `wgusjp` | `65012` | 100 | `*` |
+| `10.130.0.0/24` | `own_dc` | n/a | dev `eth0` | n/a | n/a | `*` |
+| `10.140.0.0/24` | `mesh_cn` | `172.31.0.22` | dev `wgjpcn` | `65014` | 100 | `*` |
+| `10.10.0.0/24` | `mesh_eu` | `172.31.0.5` | dev `wgeujp` | `65011 65515` | 300 | `*` |
+| `10.20.0.0/24` | `mesh_us` | `172.31.0.13` | dev `wgusjp` | `65012 65515` | 300 | `*` |
+| `10.30.0.0/24` | `azure_1` | `169.254.21.6` | via `169.254.21.6` on `xfrm42` | `65515` | 300 | `!` |
+
+### B2: CN selected NVA routes
+
+| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
+|---|---|---|---|---|---|---|
+| `10.110.0.0/24` | `mesh_eu` | `172.31.0.9` | dev `wgeucn` | `65011` | 100 | `*` |
+| `10.120.0.0/24` | `mesh_us` | `172.31.0.17` | dev `wguscn` | `65012` | 100 | `*` |
+| `10.130.0.0/24` | `mesh_jp` | `172.31.0.21` | dev `wgjpcn` | `65013` | 100 | `*` |
+| `10.140.0.0/24` | `own_dc` | n/a | dev `eth0` | n/a | n/a | `*` |
+| `10.10.0.0/24` | `mesh_eu` | `172.31.0.9` | dev `wgeucn` | `65011 65515` | 300 | `*` |
+| `10.20.0.0/24` | `mesh_us` | `172.31.0.17` | dev `wguscn` | `65012 65515` | 300 | `*` |
+| `10.30.0.0/24` | `mesh_jp` | `172.31.0.21` | dev `wgjpcn` | `65013 65515` | 300 | `*` |
+
+**US symmetry:** US selects JP through local `HubBgpConnection`, path `65012-65013`. JP selects EU through local VPN, `65013-65011`, and US through `65013-65012`. The customer routers retain the direct DC mesh, with regional mesh ingress for foreign Azure spokes.
+
+**B2 route checks: PASS.** These tables establish the requested route selections, not tested end-to-end forwarding. The original B2 run verdict remains **`BLOCKED`** because its lease expired during the read-only restoration proof, not because the captured route assertions failed. Do not relabel that original verdict `PASS`. A fresh independent recovery verification subsequently returned **`PASS`**, checking exact source bytes/metadata, restored HRPs, and firewall winners. **No B2 traffic tests were run**, and JP's selected local-spoke Azure route still carries `!`.
+
+## Why China keeps a mesh ingress in every design
+
+CN has no Azure-facing BGP session. It learns each foreign DC directly from that site's mesh router and each spoke through its regional ingress. Its captured EU mesh import body is unchanged across A/B1/B2:
+
+```bird
+bgp_next_hop = 172.31.0.9;
+if net = 10.110.0.0/24 then { bgp_community = -empty-; accept; }
+if net ~ [10.10.0.0/24, 10.20.0.0/24, 10.30.0.0/24] then {
+  bgp_community = -empty-;
+  bgp_community.add((65011, 1));
+  regional_preference(65011);
+  accept;
+}
+reject;
+```
+
+The US/JP imports apply their corresponding regional preference. That is why CN's selected spoke paths are `65011 65515`, `65012 65515`, and `65013 65515`, each at LP `300`, in all three designs. CN's own DC is originated by `own_dc`; its mesh export permits that own DC, not foreign DC transit. The complete CN configuration is linked separately for each capture, even where unchanged.
+
+## Observe both routing decisions
+
+For an **unsecured** VNet connection, set `$hub`, `$rg` and `$connection` to the target hub, resource group and connection name, then use **`HubVirtualNetworkConnection` singular**:
+
+```powershell
+$connectionId = az network vhub connection show -g $rg --vhub-name $hub -n $connection --query id -o tsv
+az network vhub get-effective-routes -n $hub -g $rg --resource-type 'HubVirtualNetworkConnection' --resource-id $connectionId --query 'value[].{Prefix:addressPrefixes[0], ASPath:asPath, NextHopType:nextHopType}' -o table
+```
+
+For a secured hub's **post-inspection** onward choices, query the owning hub with the actual firewall ID and **`AzureFirewalls` plural**:
 
 ```powershell
 az network vhub get-effective-routes -n $hub -g $rg --resource-type 'AzureFirewalls' --resource-id $(az network vhub show -g $rg -n $hub --query 'azureFirewall.id' -o tsv) --query 'value[].{Prefix:addressPrefixes[0], ASPath:asPath, NextHopType:nextHopType}' -o table
 ```
 
-Set `$hub` and `$rg` to the hub and resource group you intend to inspect. The nested `vhub show` resolves the firewall identity; it does not retrieve routes itself. Wait for the effective-route operation to complete. An HTTP `202` acceptance alone is not a captured route table. For a full archive, also retain unprojected JSON rather than only the first address prefix selected by this compact query.
+Set `$hub` and `$rg` for the target hub. Wait for operation completion; an HTTP `202` alone is not a captured table. Retain full JSON as well as the compact text projection, which shows only the first address prefix per entry.
 
-Compare that result with the NVA's routing and export views:
+Compare with the NVA:
 
 ```bash
 sudo birdc 'show route table lab4 all'
@@ -267,36 +483,14 @@ ip -j route show table main
 ip -j route get 10.10.0.10
 ```
 
-These are reader diagnostics, not commands run anew for this post. Inspect the source protocol, explicit `BGP.local_pref`, full path, next-hop rewrite, export eligibility, and kernel state together. The [full config matrix](./references.md#complete-bird-configurations) makes those comparisons possible for all four routers in all three states.
+CN has no `azure_*` peers; inspect its mesh peers instead. BIRD's export view shows explicit path edits **before automatic eBGP local-AS insertion**. Count that automatic ASN when comparing an offered local path to the firewall's remote-hub path. Read `BGP.local_pref` explicitly, not the parenthesized BIRD protocol-preference display.
 
-## HRP is a policy input, not a universal local-wins rule
+## Design choice and evidence boundary
 
-[Microsoft's HRP documentation](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference) describes `AS Path` as preferring the shortest path before local-versus-remote preference, with a specific exception for remote ExpressRoute-learned routes. It describes ExpressRoute and VPN preferences as favoring local connections earlier.
+- **A, Microsoft preferred:** accept and prefer Azure alternatives, keep export feedback protection, and align workload forwarding. The measured JP workload/EU spoke pair works in both directions, but DC-to-DC regressions and kernel-export flags prevent calling A a universal working design. CN remains mesh-only.
+- **B1, customer preferred through ER/VPN HRP:** the actual ExpressRoute-HRP capture did **not** obtain local EU/US Japan selections. VPN HRP is unmeasured. Do not deploy the intended behavior as though this test proved it.
+- **B2, customer preferred through ASPath:** zero extra EU/US nonlocal prepends produced the intended local DC exit selections while retaining the customer mesh. This is a positive route-control observation, not a traffic or failover validation.
 
-But the same documentation explicitly warns of an **ER/VPN preference race condition**: a remote route may win when the local path is **two or more AS-path entries longer**. Do not turn the nominal ordering into an unconditional "local always wins" guarantee, particularly when deliberately lengthening local advertisements.
+After the B work, the four started routers were returned to their original deallocated states; probe VMs were untouched, and the live task was stopped. The independent recovery and power-restoration records are linked in [references.md](./references.md). Restoration success does not repair BIRD's kernel-export warning or convert route-control captures into forwarding tests.
 
-This post is **not a completed three-HRP benchmark**. A separate HRP matrix attempt was inconclusive because of capture parsing; a later attempt stopped on transient Japan BGP hold expiry. Both were restored. `VpnGateway` was not run. The comparison used here is the matched baseline and two fully captured combined-policy variants, not an isolated proof of every HRP mode or a new confirmation that ExpressRoute preference chooses a longer local path.
-
-## What the experiment establishes, and what remains open
-
-**Established by the matched captures:**
-
-- A firewall remote-hub winner can coexist with an NVA mesh winner for the same prefix.
-- Allowing foreign DC imports and assigning Azure local preference `400`, with export protection intact, changed the recorded NVA selections to Azure.
-- Adding the five-route Japan UDR made the Japan workload and EU spoke pass TCP and ICMP probes in both initiated directions.
-- The combined experiment restored its starting configuration. Independent final verification passed. A separate power-restoration verdict confirms all **ten originally deallocated VMs returned to deallocated**. Resources were not all deleted.
-
-**Not established:**
-
-- A universally working all-DC design, or remediation of Japan's BIRD installation warnings.
-- A prepend-only causal result or persistent dual competing advertisements.
-- Tested mesh fallback, failure convergence, latency, throughput, or a complete HRP benchmark.
-- Packet-capture proof of the physical interhub path or complete flow symmetry.
-
-The experiment's `PASS` verdict means the specified selections were measured and restoration succeeded. It does **not** turn failed traffic cells into passes.
-
-If you want backbone-first routing, start by asking four separate questions: **What does Azure select? What does the NVA accept and prefer? What can it export back? Where does the workload send the return packet?** HRP answers only part of the first question.
-
-## References
-
-See [references.md](./references.md) for the state-by-state evidence map, complete configurations, collector and parser sources, official documentation, and the restoration records.
+No design here establishes throughput, latency, convergence time, failover/failback, universal DC-to-DC forwarding, or packet-capture proof of the physical backbone. The transferable method is narrower and more useful: **choose the intended Azure exit and the intended NVA onward path separately, then validate workload forwarding rather than inferring it from either table.**
