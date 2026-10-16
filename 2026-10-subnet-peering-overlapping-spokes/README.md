@@ -85,12 +85,39 @@ Interestingly, `allowForwardedTraffic=false` stayed unchanged on the peerings. T
 
 The fresh capture ran from **08:51:33 to 08:59:24 UTC**. Azure NIC assignments, guest addresses, and Azure VM IDs matched against guest Instance Metadata Service identities establish that these are **two different VMs with the same IP**, not two labels for one server.
 
+These are the actual `ip -br -4 addr` lines from the [spoke1 backend](evidence/nat-evidence-20261016T085133Z/before-vm-spoke1-isolated192.json) and [spoke2 backend](evidence/nat-evidence-20261016T085133Z/before-vm-spoke2-isolated192.json) captures, respectively (VM labels added):
+
+```text
+# vm-spoke1-isolated192
+eth0             UP             192.168.1.4/24 metric 100
+
+# vm-spoke2-isolated192
+eth0             UP             192.168.1.4/24 metric 100
+```
+
 At 08:56:11 UTC, the [hub capture](evidence/nat-evidence-20261016T085133Z/hub-vm-hub-hub10.json) recorded:
 
 ```text
 Destination          HTTP successes   Exact body (each ends with newline)
 10.10.1.10:8080       3/3              spoke1-backend-192.168.1.4
 10.20.0.10:8080       3/3              spoke2-backend-192.168.1.4
+```
+
+For a closer look, these selected JSON fields preserve one actual response per alias from the [verification report](evidence/nat-evidence-20261016T085133Z/verification.json):
+
+```json
+[
+  {
+    "host": "10.10.1.10",
+    "status": 200,
+    "body": "spoke1-backend-192.168.1.4\n"
+  },
+  {
+    "host": "10.20.0.10",
+    "status": 200,
+    "body": "spoke2-backend-192.168.1.4\n"
+  }
+]
 ```
 
 Those results line up with independent evidence:
