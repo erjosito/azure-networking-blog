@@ -37,7 +37,7 @@ Only the three 10.x subnets below participated. Both `192.168.1.0/24` backend su
 Spoke2 really has a **/26 parent and /27 selected subnet**, not another /16. Here is the final topology, with the backend placement made explicit:
 
 ```mermaid
-flowchart LR
+flowchart TB
   H["hub: hub10 10.0.1.0/24<br/>client 10.0.1.4"]
   subgraph S1["spoke1"]
     N1["spoke10 10.10.1.0/24<br/>NVA1 10.10.1.4<br/>alias 10.10.1.10"]
@@ -49,7 +49,7 @@ flowchart LR
     B2["excluded isolated192 192.168.1.0/24<br/>backend2 192.168.1.4"]
     N2 <-->|local routing and NAT| B2
   end
-  N1 <-->|subnet peering| H
+  H <-->|subnet peering| N1
   H <-->|subnet peering| N2
 ```
 
