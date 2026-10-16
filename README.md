@@ -6,6 +6,9 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
+- **[2026-10] Virtual WAN backbone-first routing needs more than hub routing preference**: Matched firewall and BIRD captures show why Azure imports, NVA local preference, export protection, and workload forwarding must align; Japan workload to EU spoke succeeds in both directions, with DC-to-DC regressions and kernel-installation caveats retained
+  - [Read post](./2026-10-vwan-sdwan-three-hub/)
+
 - **[2026-10] One route table for AKS nodes and Application Gateway**: A completed kubenet/AGIC lab shows how a shared table reuses AKS pod routes, then records the limits of steering gateway-subnet egress through an NVA; Azure resources were cleaned up after testing
   - [Read post](./2026-10-aks-agic-shared-udr/)
 

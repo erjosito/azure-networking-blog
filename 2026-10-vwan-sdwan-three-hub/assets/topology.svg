@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1980" viewBox="0 0 1800 1980" role="img" aria-labelledby="title desc">
+<title id="title">Three secured Virtual WAN hubs and a separate private mesh</title>
+<desc id="desc">Three secured hubs with Standard Azure Firewall and PrivateTraffic routing intent. EU and US use peered-VNet BGP NVAs. Japan uses IPsec. A separate four-site WireGuard mesh provides competing routes. Policy stages and traffic limits are explained in the post.</desc>
+<rect width="1800" height="1980" fill="white"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="40" y="50" font-size="30" fill="#000000">
+<tspan x="40" dy="0">Three-hub Virtual WAN / private SD-WAN model</tspan>
+</text>
+<text x="40" y="111" font-size="21" fill="#000000">
+<tspan x="40" dy="0">Three Standard firewalls + PrivateTraffic-only routing intent. Same topology for all three policy states.</tspan>
+</text>
+<rect x="30" y="180" width="1740" height="450" rx="12" stroke="#1864ab" stroke-width="2" fill="none"/>
+<text x="50" y="210" font-size="20" fill="#000000">
+<tspan x="50" dy="0">AZURE VIRTUAL WAN  |  vwan-threehub (Standard)  |  hub ASN 65515</tspan>
+</text>
+<rect x="70" y="250" width="440" height="130" rx="12" stroke="#1864ab" stroke-width="2" fill="#a5d8ff"/>
+<text x="90" y="283" font-size="18" fill="#000000">
+<tspan x="90" dy="0">Azure spoke EU | 10.10.0.0/24</tspan>
+<tspan x="90" dy="27.0">Probe 10.10.0.10</tspan>
+</text>
+<polyline points="290,380 290,430" fill="none" stroke="#1864ab" stroke-width="3"/>
+<rect x="70" y="430" width="440" height="130" rx="12" stroke="#1864ab" stroke-width="2" fill="#a5d8ff"/>
+<text x="90" y="463" font-size="18" fill="#000000">
+<tspan x="90" dy="0">hub-eu | West Europe</tspan>
+<tspan x="90" dy="27.0">10.250.0.0/23 | fw-eu | Private RI</tspan>
+</text>
+<rect x="680" y="250" width="440" height="130" rx="12" stroke="#1864ab" stroke-width="2" fill="#a5d8ff"/>
+<text x="700" y="283" font-size="18" fill="#000000">
+<tspan x="700" dy="0">Azure spoke US | 10.20.0.0/24</tspan>
+<tspan x="700" dy="27.0">Probe 10.20.0.10</tspan>
+</text>
+<polyline points="900,380 900,430" fill="none" stroke="#1864ab" stroke-width="3"/>
+<rect x="680" y="430" width="440" height="130" rx="12" stroke="#1864ab" stroke-width="2" fill="#a5d8ff"/>
+<text x="700" y="463" font-size="18" fill="#000000">
+<tspan x="700" dy="0">hub-us | North Central US</tspan>
+<tspan x="700" dy="27.0">10.250.2.0/23 | fw-us | Private RI</tspan>
+</text>
+<rect x="1290" y="250" width="440" height="130" rx="12" stroke="#1864ab" stroke-width="2" fill="#a5d8ff"/>
+<text x="1310" y="283" font-size="18" fill="#000000">
+<tspan x="1310" dy="0">Azure spoke JP | 10.30.0.0/24</tspan>
+<tspan x="1310" dy="27.0">Probe 10.30.0.10</tspan>
+</text>
+<polyline points="1510,380 1510,430" fill="none" stroke="#1864ab" stroke-width="3"/>
+<rect x="1290" y="430" width="440" height="130" rx="12" stroke="#1864ab" stroke-width="2" fill="#a5d8ff"/>
+<text x="1310" y="463" font-size="18" fill="#000000">
+<tspan x="1310" dy="0">hub-jp | Japan East</tspan>
+<tspan x="1310" dy="27.0">10.250.4.0/23 | fw-jp | Private RI</tspan>
+</text>
+<polyline points="510,485 680,485" fill="none" stroke="#1864ab" stroke-width="3"/>
+<polyline points="1120,485 1290,485" fill="none" stroke="#1864ab" stroke-width="3"/>
+<polyline points="290,560 290,605 1510,605 1510,560" fill="none" stroke="#1864ab" stroke-width="3"/>
+<text x="560" y="583" font-size="18" fill="#000000">
+<tspan x="560" dy="0">Managed interhub full mesh (NOT WireGuard)</tspan>
+</text>
+<polyline points="290,560 290,710" fill="none" stroke="#1864ab" stroke-width="3"/>
+<polyline points="900,560 900,710" fill="none" stroke="#1864ab" stroke-width="3"/>
+<polyline points="1510,560 1510,710" fill="none" stroke="#1864ab" stroke-width="3"/>
+<text x="75" y="672" font-size="17" fill="#000000">
+<tspan x="75" dy="0">2 eBGP peers to hub router IPs</tspan>
+</text>
+<text x="685" y="672" font-size="17" fill="#000000">
+<tspan x="685" dy="0">2 eBGP peers to hub router IPs</tspan>
+</text>
+<text x="1300" y="672" font-size="17" fill="#000000">
+<tspan x="1300" dy="0">2 IPsec tunnels + 2 eBGP peers</tspan>
+</text>
+<rect x="70" y="710" width="440" height="180" rx="12" stroke="#1864ab" stroke-width="2" fill="#a5d8ff"/>
+<text x="90" y="743" font-size="18" fill="#000000">
+<tspan x="90" dy="0">EU transit VNet | 10.210.0.0/24</tspan>
+<tspan x="90" dy="27.0">HubBgpConnection: bgp-router-eu</tspan>
+<tspan x="90" dy="27.0">Router endpoint 10.210.0.4</tspan>
+</text>
+<rect x="680" y="710" width="440" height="180" rx="12" stroke="#1864ab" stroke-width="2" fill="#a5d8ff"/>
+<text x="700" y="743" font-size="18" fill="#000000">
+<tspan x="700" dy="0">US transit VNet | 10.220.0.0/24</tspan>
+<tspan x="700" dy="27.0">HubBgpConnection: bgp-router-us</tspan>
+<tspan x="700" dy="27.0">Router endpoint 10.220.0.4</tspan>
+</text>
+<rect x="1290" y="710" width="440" height="180" rx="12" stroke="#e67700" stroke-width="2" fill="#fff3bf"/>
+<text x="1310" y="743" font-size="18" fill="#000000">
+<tspan x="1310" dy="0">JP vpngw-jp | active-active S2S</tspan>
+<tspan x="1310" dy="27.0">BGP local 169.254.21.1 (both)</tspan>
+<tspan x="1310" dy="27.0">Azure peers .21.2 / .21.6</tspan>
+</text>
+<polyline points="290,890 290,1030" fill="none" stroke="#1864ab" stroke-width="3"/>
+<polyline points="900,890 900,1030" fill="none" stroke="#1864ab" stroke-width="3"/>
+<polyline points="1510,890 1510,1030" fill="none" stroke="#e67700" stroke-width="3"/>
+<rect x="30" y="950" width="1740" height="840" rx="12" stroke="#862e9c" stroke-width="2" fill="none"/>
+<text x="50" y="979" font-size="19" fill="#000000">
+<tspan x="50" dy="0">PRIVATE SD-WAN MODEL  |  six unique WireGuard / eBGP links  |  physical endpoints over Azure peering</tspan>
+</text>
+<rect x="70" y="1030" width="440" height="230" rx="12" stroke="#862e9c" stroke-width="2" fill="#f3d9fa"/>
+<text x="90" y="1063" font-size="18" fill="#000000">
+<tspan x="90" dy="0">EU BIRD | ASN 65011 | 10.210.0.4</tspan>
+<tspan x="90" dy="27.0">DC VNet 10.110.0.0/24</tspan>
+<tspan x="90" dy="27.0">Probe 10.110.0.10 (via transit)</tspan>
+<tspan x="90" dy="27.0">No direct DC-to-hub attachment</tspan>
+</text>
+<rect x="680" y="1030" width="440" height="230" rx="12" stroke="#862e9c" stroke-width="2" fill="#f3d9fa"/>
+<text x="700" y="1063" font-size="18" fill="#000000">
+<tspan x="700" dy="0">US BIRD | ASN 65012 | 10.220.0.4</tspan>
+<tspan x="700" dy="27.0">DC VNet 10.120.0.0/24</tspan>
+<tspan x="700" dy="27.0">Probe 10.120.0.10 (via transit)</tspan>
+<tspan x="700" dy="27.0">No direct DC-to-hub attachment</tspan>
+</text>
+<rect x="1290" y="1030" width="440" height="230" rx="12" stroke="#862e9c" stroke-width="2" fill="#f3d9fa"/>
+<text x="1310" y="1063" font-size="18" fill="#000000">
+<tspan x="1310" dy="0">JP BIRD + strongSwan | ASN 65013</tspan>
+<tspan x="1310" dy="27.0">DC VNet / router 10.130.0.0/24 / .4</tspan>
+<tspan x="1310" dy="27.0">Probe 10.130.0.10</tspan>
+<tspan x="1310" dy="27.0">Only IPsec ingress in this lab</tspan>
+</text>
+<rect x="680" y="1540" width="440" height="230" rx="12" stroke="#862e9c" stroke-width="2" fill="#f3d9fa"/>
+<text x="700" y="1573" font-size="18" fill="#000000">
+<tspan x="700" dy="0">CN logical DC | ASN 65014</tspan>
+<tspan x="700" dy="27.0">Japan East (not sovereign China)</tspan>
+<tspan x="700" dy="27.0">DC 10.140.0.0/24 | router/probe .4</tspan>
+<tspan x="700" dy="27.0">No direct Azure ingress</tspan>
+</text>
+<polyline points="510,1130 680,1130" fill="none" stroke="#862e9c" stroke-width="3"/>
+<text x="520" y="1096" font-size="16" fill="#000000">
+<tspan x="520" dy="0">EU-US</tspan>
+<tspan x="520" dy="24.0">.0/30</tspan>
+</text>
+<polyline points="1120,1130 1290,1130" fill="none" stroke="#862e9c" stroke-width="3"/>
+<text x="1130" y="1096" font-size="16" fill="#000000">
+<tspan x="1130" dy="0">US-JP</tspan>
+<tspan x="1130" dy="24.0">.12/30</tspan>
+</text>
+<polyline points="290,1260 290,1350 1510,1350 1510,1260" fill="none" stroke="#862e9c" stroke-width="3"/>
+<text x="710" y="1317" font-size="17" fill="#000000">
+<tspan x="710" dy="0">EU-JP 172.31.0.4/30</tspan>
+</text>
+<polyline points="210,1260 210,1650 680,1650" fill="none" stroke="#862e9c" stroke-width="3"/>
+<text x="245" y="1608" font-size="18" fill="#000000">
+<tspan x="245" dy="0">EU-CN .8/30</tspan>
+</text>
+<polyline points="900,1260 900,1540" fill="none" stroke="#862e9c" stroke-width="3"/>
+<text x="920" y="1467" font-size="17" fill="#000000">
+<tspan x="920" dy="0">US-CN .16/30</tspan>
+</text>
+<polyline points="1590,1260 1590,1650 1120,1650" fill="none" stroke="#862e9c" stroke-width="3"/>
+<text x="1180" y="1608" font-size="18" fill="#000000">
+<tspan x="1180" dy="0">JP-CN .20/30</tspan>
+</text>
+<text x="70" y="1828" font-size="18" fill="#000000">
+<tspan x="70" dy="0">Purple: private WireGuard (all subnets 172.31.0.x/30). Blue: Azure fabric / hub BGP. Orange: JP IPsec.</tspan>
+</text>
+<text x="70" y="1878" font-size="18" fill="#000000">
+<tspan x="70" dy="0">Underlay: four DC VNets fully mesh-peered + transit endpoint peerings; 13 pairs / 26 directions (not drawn as overlay).</tspan>
+</text>
+<text x="70" y="1928" font-size="18" fill="#000000">
+<tspan x="70" dy="0">Exports depend on selected-route source. 6 Azure + 6 mesh = 12 unique BGP adjacencies; 18 BIRD endpoint entries.</tspan>
+</text>
+</g>
+</svg>
