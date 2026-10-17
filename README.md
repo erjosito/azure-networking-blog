@@ -9,7 +9,7 @@ The following posts have been dynamically generated with GitHub Copilot CLI and 
 - **[2026-10] Subnet peering: expose overlapping backends without extra transit VNets**: Two distinct backends keep the same IP while unique in-spoke NAT aliases avoid an extra transit VNet layer; HTTP, effective routes, and the complete 78-file evidence archive explain the tested path and cost caveats
   - [Read post](./2026-10-subnet-peering-overlapping-spokes/)
 
-- **[2026-10] Microsoft or customer backbone? Three Virtual WAN routing designs tested**: All-hub branch-to-branch reruns add 42-direction TCP/ICMP matrices and packet-interface evidence to complete firewall/NVA tables; ExpressRoute-HRP history dependency persists, while residual forwarding failures remain explicit
+- **[2026-10] Microsoft or customer backbone? Three Virtual WAN routing designs tested**: DC/Azure acceptance excludes DC-to-DC traffic; A and corrected B2 pass 24/24 TCP and ICMP, a reversible subnet-UDR control isolates B2's Japan workload failures, and a step-by-step B1 explanation separates route history from an unproven internal race
   - [Read post](./2026-10-vwan-sdwan-three-hub/)
 
 - **[2026-10] One route table for AKS nodes and Application Gateway**: A completed kubenet/AGIC lab shows how a shared table reuses AKS pod routes, then records the limits of steering gateway-subnet egress through an NVA; Azure resources were cleaned up after testing
