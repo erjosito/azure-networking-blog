@@ -1,90 +1,94 @@
-# References and exact A/B1/B2 evidence map
+# References and exact all-hub B2B evidence map
 
-## Scope and publication provenance
+Current measurements: 17 October 2026. Every current A/B1/B2 table and traffic matrix uses the all-enabled rerun, not the historical mixed-setting revision.
 
-Measurements: **16 and 17 October 2026**. A prefers the Microsoft backbone; B1 and B2 implement customer-backbone preference for the measured routes. B1 uses the final 17 October route-history control state. It tests ExpressRoute HRP only, not VPN HRP. B1/B2 have **no new traffic tests**.
+The rerun controller, report, sanitized captures and restoration proofs are published through [erjosito/net-lab-builder#16](https://github.com/erjosito/net-lab-builder/pull/16).
 
-The post uses only these matched scenario directories beneath the public [three-hub lab](https://github.com/erjosito/net-lab-builder/tree/main/labs/vwan-sdwan-three-hub):
+[Full rerun report](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-summary-20261017/README.md) and [all 588 directional cells](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-summary-20261017/traffic.csv).
 
-| Design | Exact capture directory | Label |
+## Primary matched captures
+
+### A: A, plus JP workload UDR
+
+[Full scenario](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/scenario-result.json); [selected routes](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/selected-routes.json); [42-direction traffic](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/traffic-summary.json); [packet observations](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/path-observations.json).
+
+| Site | Complete BIRD configuration | Full firewall table |
 |---|---|---|
-| A | [backbone-policy-design-20261016/nva-policy-and-jp-udr](https://github.com/erjosito/net-lab-builder/tree/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr) | `nva-policy-and-jp-udr` |
-| B1 | [hrp-reselection-control-20261017/jp-returned](https://github.com/erjosito/net-lab-builder/tree/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/jp-returned) | `jp-returned` |
-| B2 | [ab-b2-customer-20261016/B2](https://github.com/erjosito/net-lab-builder/tree/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/B2) | `B2` |
+| EU | [router-eu.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/router-eu.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/A-workload-UDR-eu-table2.txt) |
+| US | [router-us.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/router-us.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/A-workload-UDR-us-table2.txt) |
+| JP | [router-jp.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/router-jp.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/A-workload-UDR-jp-table2.txt) |
+| CN | [router-cn.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/router-cn.conf) | No hub attachment |
 
-The evidence is published on public `main`, including the B1/B2 captures and recovery records merged through [erjosito/net-lab-builder#13](https://github.com/erjosito/net-lab-builder/pull/13), commit `c5bef096f4de19b8984450de801c15be8a725817`. Start with the public [A/B design comparison report](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-design-comparison-20261016/README.md).
+Full firewall JSON is alongside the text with a `.json` suffix. Raw BIRD selections and alternatives are in `router-{site}-bird-routes.txt`; both Azure export views are in `router-{site}-export-azure_{0,1}.txt`. CN has no Azure peers. NVA route snapshots also retain Linux routes, policy rules and lookups. The post renders all EU/JP firewall entries and all seven prefixes on EU/JP/CN, including `!` kernel-export failures.
 
-The B1 follow-up is merged through [erjosito/net-lab-builder#14](https://github.com/erjosito/net-lab-builder/pull/14), commit `d143c88db628b730495bbfb1a291c299b4ba675c`. Its [route-history report](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/README.md) preserves the initial remote winner, controlled withdrawal, final local winner and exact restoration. The older 16 October B1 capture remains historical evidence, not the source of the current B1 tables.
+### B1: B1, JP direct prefix returned
 
-The additional four-versus-three control and controller extension are published through [erjosito/net-lab-builder#15](https://github.com/erjosito/net-lab-builder/pull/15). The primary B1 tables still use the original three-prepend final state from the first follow-up, not a mixture of the two controls.
+[Full scenario](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/scenario-result.json); [selected routes](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/selected-routes.json); [42-direction traffic](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/traffic-summary.json); [packet observations](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/path-observations.json).
 
-The existing topology SVG is retained unchanged for the rewrite. It shows connectivity, not a claim that all plotted links carry the selected traffic in every design.
-
-## Complete captured BIRD configurations
-
-All nine links point to the exact design's captured configuration, not a reconstruction or a generic example.
-
-| Design | EU | JP | CN |
-|---|---|---|---|
-| A | [router-eu.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr/router-eu.conf) | [router-jp.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr/router-jp.conf) | [router-cn.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr/router-cn.conf) |
-| B1 | [router-eu.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/jp-returned/router-eu.conf) | [router-jp.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/jp-returned/router-jp.conf) | [router-cn.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/jp-returned/router-cn.conf) |
-| B2 | [router-eu.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/B2/router-eu.conf) | [router-jp.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/B2/router-jp.conf) | [router-cn.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/B2/router-cn.conf) |
-
-`router-us.conf`, US route output, and the US firewall captures are present in each exact scenario directory above. They support the described US symmetry; US is not inferred solely from EU.
-
-## Full firewall effective-route captures
-
-The post includes every row, in original order, from each of these six text captures:
-
-| Design | EU full text | JP full text |
+| Site | Complete BIRD configuration | Full firewall table |
 |---|---|---|
-| A | [EU table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr/nva-policy-and-jp-udr-eu-table2.txt) | [JP table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr/nva-policy-and-jp-udr-jp-table2.txt) |
-| B1 | [EU table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/jp-returned/jp-returned-eu-table2.txt) | [JP table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/jp-returned/jp-returned-jp-table2.txt) |
-| B2 | [EU table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/B2/B2-eu-table2.txt) | [JP table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/B2/B2-jp-table2.txt) |
+| EU | [router-eu.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-eu.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/B1-returned-eu-table2.txt) |
+| US | [router-us.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-us.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/B1-returned-us-table2.txt) |
+| JP | [router-jp.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-jp.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/B1-returned-jp-table2.txt) |
+| CN | [router-cn.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-cn.conf) | No hub attachment |
 
-For the corresponding full JSON, replace `.txt` with `.json` in the same directory. Hub metadata, intent metadata, `winners2.json`, and `snapshot2.json` are captured alongside them with the scenario label. Empty AS-path text fields are rendered as `empty`, not discarded. Default Internet and transit-VNet entries are retained.
+Full firewall JSON is alongside the text with a `.json` suffix. Raw BIRD selections and alternatives are in `router-{site}-bird-routes.txt`; both Azure export views are in `router-{site}-export-azure_{0,1}.txt`. CN has no Azure peers. NVA route snapshots also retain Linux routes, policy rules and lookups. The post renders all EU/JP firewall entries and all seven prefixes on EU/JP/CN, including `!` kernel-export failures.
 
-## NVA selections, attributes, and exports
+### B2: B2, zero extra EU/US prepends
 
-| Design | All selected routes | Full scenario |
+[Full scenario](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/scenario-result.json); [selected routes](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/selected-routes.json); [42-direction traffic](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/traffic-summary.json); [packet observations](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/path-observations.json).
+
+| Site | Complete BIRD configuration | Full firewall table |
 |---|---|---|
-| A | [selected-routes.json](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr/selected-routes.json) | [scenario-result.json](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr/scenario-result.json) |
-| B1 | [selected-routes.json](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/jp-returned/selected-routes.json) | [scenario-result.json](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/jp-returned/scenario-result.json) |
-| B2 | [selected-routes.json](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/B2/selected-routes.json) | [scenario-result.json](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/B2/scenario-result.json) |
+| EU | [router-eu.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-eu.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/B2-eu-table2.txt) |
+| US | [router-us.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-us.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/B2-us-table2.txt) |
+| JP | [router-jp.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-jp.conf) | [table2.txt](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/B2-jp-table2.txt) |
+| CN | [router-cn.conf](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-cn.conf) | No hub attachment |
 
-Each exact scenario directory also contains:
+Full firewall JSON is alongside the text with a `.json` suffix. Raw BIRD selections and alternatives are in `router-{site}-bird-routes.txt`; both Azure export views are in `router-{site}-export-azure_{0,1}.txt`. CN has no Azure peers. NVA route snapshots also retain Linux routes, policy rules and lookups. The post renders all EU/JP firewall entries and all seven prefixes on EU/JP/CN, including `!` kernel-export failures.
 
-- `router-{eu,jp,cn}-bird-routes.txt`: full source for protocol, `BGP.next_hop`, BIRD gateway/interface resolution, AS path, explicit `BGP.local_pref`, and `*` / `!` marker.
-- `router-{eu,jp}-export-azure_{0,1}.txt`: offers to both Azure peers, before automatic eBGP local-AS insertion. CN has no Azure peer.
-- `{label}-routes-{eu,jp,cn}-decoded.json`: kernel routes, lookups, and full route/export capture.
+## Additional controls and closure
 
-All **63 selected NVA rows**, seven prefixes at each of three sites for each of three designs, are reproduced in the post. Static `own_dc` routes have no BGP next-hop/path/local-preference attributes; those cells are explicitly `n/a`, with BIRD resolution shown separately. That resolution does not prove successful kernel installation.
+- [Mixed baseline](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-mixed-baseline-20261017/baseline/scenario-result.json).
+- [All B2B baseline](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-enabled-baseline-20261017/baseline/scenario-result.json).
+- [A, NVA policy only](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A/scenario-result.json).
+- [A, plus JP workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/scenario-result.json).
+- [B1, ExpressRoute initial](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1/scenario-result.json).
+- [B1, JP direct prefix withdrawn](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-withdrawn/scenario-result.json).
+- [B1, JP direct prefix returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/scenario-result.json).
+- [B1 one-ASN, initial](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN/scenario-result.json).
+- [B1 one-ASN, withdrawn](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN-withdrawn/scenario-result.json).
+- [B1 one-ASN, returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN-returned/scenario-result.json).
+- [B1, VPN HRP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-VPN-20261017/B1-VPN/scenario-result.json).
+- [B2, zero extra EU/US prepends](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/scenario-result.json).
+- [Original mixed state restored](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-restore-mixed-20261017/restored/scenario-result.json).
+- [Independent original-state verification](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-independent-verify-20261017/independent-verification/scenario-result.json).
 
-## Traffic and verdict interpretation
+[Original VM power inventory restored](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-power-stop-20261017/power-verdict.json). Exact source bytes/metadata, original mixed hub flags/HRPs and original paired firewall winners were independently restored; traffic returned to 28/42 TCP and 32/42 ICMP. Temporary A route-table cleanup is captured in the A controller's restore evidence.
 
-- [A traffic JSON](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/nva-policy-and-jp-udr/nva-policy-and-jp-udr-traffic.json): the seven TCP/ICMP cells retained in the post. JP workload / EU spoke succeeds both ways; DC-to-DC regressions remain.
-- [A backbone verdict](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/backbone-verdict.json): original combined-policy experiment `PASS`, restored true. It does not make failed traffic cells pass.
-- [A source report](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/README.md): broader original experiment context. The A tables in this post use only the exact `nva-policy-and-jp-udr` capture.
-- [B1 route-history verdict](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/reselection-verdict.json): `PASS`, restored true, outcome `route-history-sensitive-local-preference`. Identical original three-prepend configuration before and after the controlled withdrawal gives different firewall winners. Local Japan paths remain selected after Japan's direct advertisement returns.
-- [Earlier B1 customer verdict](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b1-customer-20261016/customer-verdict.json): historical `INCONCLUSIVE`, restored true, with two extra prepends and remote winners at EU/US. Its one-ASN path-length difference is not retroactively explained by the documented two-longer condition.
-- [B1 independent exact restoration](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-verify-20261017/verification-verdict.json) and [power restoration](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-power-20261017/power-verdict.json): both `PASS`; original source/metadata, sessions, mixed HRPs, firewall winners and power inventory restored.
-- [Separate one-ASN-difference control](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-one-asn-control-20261017/README.md): EU local length four versus remote three showed the same history-dependent transition. [Scenario](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-one-asn-control-20261017/reselection-verdict.json), [independent reset](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-one-asn-verify-20261017/verification-verdict.json) and [power closure](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-one-asn-power-20261017/power-verdict.json) all `PASS`. This observation is outside the published two-longer condition; no particular internal cause is inferred.
-- [B2 original customer verdict](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-b2-customer-20261016/customer-verdict.json): original verdict `BLOCKED`, with `RESTORE: Lease stopped or expired`. B2's route checks passed, independently of this blocked restoration proof; this original run verdict is not rewritten as a pass.
-- [Fresh independent recovery verification](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-final-recovery-verification-20261016/verification-verdict.json): `PASS`, verifying exact source/metadata and restored HRPs/firewall winners after the blocked proof.
-- [Router power restoration](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-router-power-restore-20261016/power-restore-verdict.json): `PASS`, restored true, only started routers changed. All four started routers returned to their original deallocated state; probe VMs were untouched.
+Collector PASS means complete evidence and exact configuration closure, not all traffic passed. No throughput, failover or universal path-symmetry claim follows. The packet observations explicitly expose cases where reachability does not establish the intended Virtual WAN traversal.
 
-The JP `!` kernel-export-failed markers are retained. They were not remediated. No B1/B2 traffic test, universal all-DC forwarding, failover, convergence, performance, or physical-path capture claim is made.
+## Historical mixed-setting evidence, not current table sources
 
-## Mechanism and official documentation
+- [Original A experiment and forwarding limitations](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/backbone-policy-design-20261016/README.md).
+- [Original A/B comparison, including B1 INCONCLUSIVE and B2 BLOCKED verdicts](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-design-comparison-20261016/README.md).
+- [Original three-prepend route-history control](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/README.md).
+- [Original one-ASN-difference route-history control](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-one-asn-control-20261017/README.md).
+- [Independent exact reset after the historical B2 blocked proof](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-final-recovery-verification-20261016/verification-verdict.json).
 
-- [Exact A transform and UDR builder](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_backbone.py).
-- [B1 route-history controller](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_hrp_reselection.py).
-- [Source and route collectors](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_snapshot.py).
-- [Selected-route parser](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_comparison.py), explicitly preserving `*` and `!`.
-- [Virtual hub routing preference](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference): ordering, remote ExpressRoute exception, interhub `65520-65520`, and documented race-condition caveat. The current B1 local length five versus remote length three falls within the warning. Route-history dependency is demonstrated, but Azure's internal mechanism is not identified; the older four-versus-three observation remains distinct.
-- [View virtual hub effective routes](https://learn.microsoft.com/en-us/azure/virtual-wan/effective-routes-virtual-hub).
-- [Virtual WAN routing intent](https://learn.microsoft.com/en-us/azure/virtual-wan/about-routing-intent).
-- [Azure CLI effective-route reference](https://learn.microsoft.com/en-us/cli/azure/network/vhub#az-network-vhub-get-effective-routes).
+Those original verdicts are preserved; the later successful controls do not retroactively turn blocked measurements into passes. Their source publication is retained in erjosito/net-lab-builder#13, erjosito/net-lab-builder#14 and erjosito/net-lab-builder#15.
+
+## Commands, implementation and official references
+
+- [design_b2b.py](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_b2b.py).
+- [b2b_report.py](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/b2b_report.py).
+- [design_backbone.py](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_backbone.py).
+- [design_snapshot.py](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_snapshot.py).
+- [design_comparison.py](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/deploy/design_comparison.py).
+- [Hub routing preference](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference).
+- [BGP peering considerations, including branch-to-branch](https://learn.microsoft.com/en-us/azure/virtual-wan/scenario-bgp-peering-hub#benefits-and-considerations).
+- [Routing intent](https://learn.microsoft.com/en-us/azure/virtual-wan/about-routing-intent).
+- [Effective routes](https://learn.microsoft.com/en-us/azure/virtual-wan/effective-routes-virtual-hub).
 - [BIRD 2 documentation](https://bird.network.cz/?get_doc&v=20&f=bird.html).
 
-Discriminators in the diagnostic examples: **`HubVirtualNetworkConnection` singular** for the unsecured connection, **`AzureFirewalls` plural** for the secured firewall.
+The diagnostic discriminators remain `AzureFirewalls` (plural) for secured firewall routes and `HubVirtualNetworkConnection` (singular) for unsecured connection routes. The topology SVG is unchanged and represents connectivity, not proof that every drawn path carries test traffic.
