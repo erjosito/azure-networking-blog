@@ -2,21 +2,21 @@
 
 Choosing a backbone is a two-sided routing decision. Azure must select the right exit from a secured Virtual WAN hub, and the customer router must select the intended onward path. Hub routing preference alone cannot align those decisions.
 
-This three-hub lab compares a Microsoft-backbone design with two customer-backbone approaches. **The Microsoft-backbone design selected remote hubs for the measured EU/Japan DC routes. The ASPath customer-backbone design selected local attachments and retained the customer mesh. The ExpressRoute-HRP customer-backbone attempt did not achieve that local selection at EU or US.** Only the Microsoft-backbone design has workload traffic measurements, and even those show DC-to-DC regressions.
+This three-hub lab compares a Microsoft-backbone design with two customer-backbone approaches. **The Microsoft-backbone design selected remote hubs for the measured EU/Japan DC routes. Both customer-backbone approaches reproduced local Japan-path selection at EU and US, but ExpressRoute HRP showed a route-history dependency: changing HRP alone retained the old remote winner; withdrawing and restoring Japan's direct advertisement established the longer local winners.** Only the Microsoft-backbone design has workload traffic measurements, and even those show DC-to-DC regressions.
 
 **A means Microsoft backbone preferred. B1 and B2 are two approaches intended to prefer the customer backbone.**
 
 | Design | Intended preference | Hub routing preference, all three hubs | NVA policy and extra prepends | Measured result |
 |---|---|---|---|---|
 | **A** | Microsoft backbone | `ASPath` | Foreign DCs and spokes from Azure at LP `400`; three extra nonlocal DC export prepends on EU/US/JP | Remote-hub selections for the measured EU/Japan routes; JP workload and EU spoke TCP/ICMP pass both ways, but DC-to-DC failures remain |
-| **B1** | Customer backbone through ExpressRoute/VPN HRP | `ExpressRoute` tested; VPN HRP **not measured** | Azure imports only spokes; regional preference; two extra nonlocal DC prepends on EU/US, none on JP | EU/US still select remote Japan hub; **intended customer-backbone selection not demonstrated** |
+| **B1** | Customer backbone through ExpressRoute/VPN HRP | `ExpressRoute` tested; VPN HRP **not measured** | Azure imports only spokes; regional preference; three extra nonlocal DC prepends on EU/US, none on JP | Longer local Japan paths win after controlled withdrawal/re-advertisement of Japan's direct export; changing HRP alone initially retained remote winners |
 | **B2** | Customer backbone through ASPath and prepend control | `ASPath` | Same spoke-only import policy as B1; **zero extra** nonlocal DC prepends on EU/US, none on JP | Local EU/US BGP attachments and JP VPN win the measured DC choices; **route-control result only**, no new traffic tests |
 
 B2 is about controlling prepends, not adding them everywhere: removing the extra EU/US prepends makes the local offer shorter than the remote-hub alternative. A is a combined import, local-preference, export, and HRP design, not a prepend-only threshold experiment.
 
-The [documented HRP ordering](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference) explains the intended distinction: **ExpressRoute and VPN prefer local-hub routes before comparing AS-path lengths; ASPath compares path length first and uses locality as a tie-breaker.** B1 tests the former approach, but its measured EU/US result below did not reproduce that intended local preference.
+The [documented HRP ordering](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference) explains the intended distinction: **ExpressRoute and VPN prefer local-hub routes before comparing AS-path lengths; ASPath compares path length first and uses locality as a tie-breaker.** B1 reproduces the former behavior, while also showing why route history must be controlled when comparing HRP settings.
 
-All measurements are from **16 October 2026**. The [references and exact evidence map](./references.md) identify the three matched captures, including each design's complete EU, JP and CN BIRD configurations. The public [A/B comparison report](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/ab-design-comparison-20261016/README.md) links the published source evidence.
+Measurements are from **16 and 17 October 2026**. The [references and exact evidence map](./references.md) identify the matched captures, including each design's complete EU, JP and CN BIRD configurations. The [17 October B1 follow-up](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reselection-control-20261017/README.md) reconciles the earlier negative observation with the successful local-preference result; the original verdicts remain available.
 
 ## One topology, two possible backbones
 
@@ -212,9 +212,9 @@ Japan's `!` flags also remain unresolved. Captured kernel routes and lookups con
 
 The intended path from an Azure spoke to a foreign DC is local secured hub, local customer attachment, and customer mesh to the destination. B1 tests whether the HRP locality preference supplies that local exit while the NVAs retain the mesh.
 
-**Only `ExpressRoute` HRP was measured**, on all three hubs. VPN HRP is an unmeasured alternative, not an equivalent validated result. EU/US use **two extra nonlocal DC prepends**, Japan none. B1 retains spoke-only Azure imports, so foreign DCs stay on the customer mesh inside the NVAs.
+**Only `ExpressRoute` HRP was measured**, on all three hubs. VPN HRP is an unmeasured alternative, not an equivalent validated result. The 17 October follow-up retained the original EU/US **three extra nonlocal DC prepends**, Japan none. B1 retains spoke-only Azure imports, so foreign DCs stay on the customer mesh inside the NVAs.
 
-### B1 policy and the negative result
+### B1 policy and the route-history control
 
 The captured EU Azure import body, shared with B2, is:
 
@@ -240,6 +240,7 @@ filter azure_export {
     if net != 10.110.0.0/24 then {
       bgp_path.prepend(65011);
       bgp_path.prepend(65011);
+      bgp_path.prepend(65011);
     }
         accept;
   }
@@ -247,7 +248,7 @@ filter azure_export {
 }
 ```
 
-US uses two `65012` prepends. JP's nonlocal exports have **no extra prepends**. In both B designs, Japan's `azure_0` import body is:
+US uses three `65012` prepends. JP's nonlocal exports have **no extra prepends**. In both B designs, Japan's `azure_0` import body is:
 
 ```bird
 if net ~ [10.10.0.0/24, 10.20.0.0/24, 10.30.0.0/24] then {
@@ -262,29 +263,43 @@ reject;
 
 Its `azure_1` uses `.6`. JP exports DCs with the same `own_dc` / `mesh_*` source guard, but no prepend statements.
 
-For Japan's prefix, BIRD's EU export view prints `65011 65011 65013`. Native eBGP automatically inserts one more local ASN, so the **offered local wire path** is:
+For Japan's prefix, BIRD's EU export view prints `65011 65011 65011 65013`. Native eBGP automatically inserts one more local ASN, so the **offered local wire path** is:
 
 ```text
-EU BIRD export view: 65011 65011 65013
-EU offered path:    65011 65011 65011 65013   (length 4)
-Remote hub path:    65520 65520 65013         (length 3)
+EU BIRD export view: 65011 65011 65011 65013
+EU offered path:    65011 65011 65011 65011 65013   (length 5)
+Remote hub path:    65520 65520 65013               (length 3)
 ```
 
-**The remote Japan hub still wins at both EU and US.** The observed length difference is **one**, not two. The documented HRP race-condition caveat for a local route at least two entries longer does **not explain this observation**. The capture does not establish another root cause, an unsupported-NVA rule, or a universal ER/VPN behavior.
+The controlled sequence kept EU/US configurations unchanged:
+
+| Step | Japan's direct VPN export of `10.130.0.0/24` | EU/US firewall Japan-path selection |
+|---|---|---|
+| Change the saved mixed HRPs to all-hub ExpressRoute | Present | Existing remote Japan winners, length 3, remain |
+| Withdraw only that prefix from both Japan Azure peers, not from its mesh peers | Absent | Local NVA winners, length 5 |
+| Restore Japan's exact original export | Present again | **Local NVA winners, length 5, remain selected** |
+
+**The longer local paths win with the original Japan advertisement restored.** All four BIRD files and metadata and all three HRPs are identical between the first and final steps, yet the winners differ. This confirms local-route eligibility and establishes a **route-history dependency**, rather than a general inability to prefer peered-NVA routes.
+
+The documented race-condition warning is relevant here: the local path is **two ASNs longer** than the remote path. However, without Azure backend tracing this does not identify the exact internal mechanism or prove that every HRP change requires a route refresh.
+
+A separate [one-ASN-difference control](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-one-asn-control-20261017/README.md) repeated the sequence with two EU extra prepends: the remote length-three path initially won, but the local length-four path remained selected after Japan's direct export was withdrawn and restored. Configuration and HRP were again identical before and after. **History dependence was therefore observed outside the documentation's two-or-more-longer condition as well.** That is an additional measured observation, not proof of the same internal race or a reason to rewrite the historical negative verdict.
+
+The full B1 tables below use the final **`jp-returned`** capture, after restoration of Japan's direct advertisement. Only the Japan prefix was controlled; other foreign DC routes were not individually refreshed, so this is not proof of automatic customer-first selection for every prefix. No IPsec, WireGuard, mesh-export or workload-routing change was made.
 
 ### B1: complete EU firewall table
 
 | Prefix | ASPath | NextHopType |
 |---|---|---|
 | `10.110.0.0/24` | `65011` | HubBgpConnection |
-| `10.140.0.0/24` | `65011-65011-65011-65014` | HubBgpConnection |
-| `10.130.0.0/24` | `65520-65520-65013` | Remote Hub |
+| `10.210.0.0/24` | empty | Virtual Network Connection |
+| `10.10.0.0/24` | empty | Virtual Network Connection |
+| `10.130.0.0/24` | `65011-65011-65011-65011-65013` | HubBgpConnection |
 | `10.30.0.0/24` | `65520-65520` | Remote Hub |
 | `10.220.0.0/24` | `65520-65520` | Remote Hub |
 | `10.120.0.0/24` | `65520-65520-65012` | Remote Hub |
+| `10.140.0.0/24` | `65520-65520-65013-65014` | Remote Hub |
 | `10.20.0.0/24` | `65520-65520` | Remote Hub |
-| `10.210.0.0/24` | empty | Virtual Network Connection |
-| `10.10.0.0/24` | empty | Virtual Network Connection |
 | `0.0.0.0/0` | empty | Internet |
 
 ### B1: complete JP firewall table
@@ -292,10 +307,10 @@ Remote hub path:    65520 65520 65013         (length 3)
 | Prefix | ASPath | NextHopType |
 |---|---|---|
 | `10.30.0.0/24` | empty | Virtual Network Connection |
+| `10.120.0.0/24` | `65013-65012` | VPN_S2S_Gateway |
+| `10.110.0.0/24` | `65013-65011` | VPN_S2S_Gateway |
 | `10.140.0.0/24` | `65013-65014` | VPN_S2S_Gateway |
 | `10.130.0.0/24` | `65013` | VPN_S2S_Gateway |
-| `10.110.0.0/24` | `65013-65011` | VPN_S2S_Gateway |
-| `10.120.0.0/24` | `65013-65012` | VPN_S2S_Gateway |
 | `10.10.0.0/24` | `65520-65520` | Remote Hub |
 | `10.220.0.0/24` | `65520-65520` | Remote Hub |
 | `10.20.0.0/24` | `65520-65520` | Remote Hub |
@@ -338,7 +353,7 @@ Remote hub path:    65520 65520 65013         (length 3)
 | `10.20.0.0/24` | `mesh_us` | `172.31.0.17` | dev `wguscn` | `65012 65515` | 300 | `*` |
 | `10.30.0.0/24` | `mesh_jp` | `172.31.0.21` | dev `wgjpcn` | `65013 65515` | 300 | `*` |
 
-**US symmetry:** US retains the remote Japan winner `65520-65520-65013`, despite offering `65012-65012-65012-65013` locally. Japan's local VPN choices for EU/US do not turn this into a successful all-region customer-backbone result. The B1 verdict is `INCONCLUSIVE`, with the intended EU local-path assertion not met and restoration recorded as true. **No B1 traffic tests were run.**
+**US symmetry:** US retains the longer local Japan winner `65012-65012-65012-65012-65013` after Japan's direct advertisement returns. The control verdict and independent exact restoration verification both passed. The earlier 16 October negative verdict is preserved, not rewritten as a success. **No B1 traffic tests were run.**
 
 ## B2: customer backbone through ASPath and prepend control
 
@@ -488,7 +503,7 @@ CN has no `azure_*` peers; inspect its mesh peers instead. BIRD's export view sh
 ## Design choice and evidence boundary
 
 - **A, Microsoft preferred:** accept and prefer Azure alternatives, keep export feedback protection, and align workload forwarding. The measured JP workload/EU spoke pair works in both directions, but DC-to-DC regressions and kernel-export flags prevent calling A a universal working design. CN remains mesh-only.
-- **B1, customer preferred through ER/VPN HRP:** the actual ExpressRoute-HRP capture did **not** obtain local EU/US Japan selections. VPN HRP is unmeasured. Do not deploy the intended behavior as though this test proved it.
+- **B1, customer preferred through ER/VPN HRP:** ExpressRoute HRP retained longer local Japan paths after a controlled withdrawal/re-advertisement of the direct VPN prefix. The initial HRP change alone retained remote winners, demonstrating a route-history dependency. Other prefixes need their own validation; VPN HRP is unmeasured.
 - **B2, customer preferred through ASPath:** zero extra EU/US nonlocal prepends produced the intended local DC exit selections while retaining the customer mesh. This is a positive route-control observation, not a traffic or failover validation.
 
 After the B work, the four started routers were returned to their original deallocated states; probe VMs were untouched, and the live task was stopped. The independent recovery and power-restoration records are linked in [references.md](./references.md). Restoration success does not repair BIRD's kernel-export warning or convert route-control captures into forwarding tests.
