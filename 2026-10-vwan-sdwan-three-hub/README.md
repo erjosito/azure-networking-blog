@@ -2,11 +2,13 @@
 
 **A prefers Microsoft's backbone; B1 and B2 prefer the customer backbone.** Azure's hub exit selection and the NVA's onward selection must agree. This rerun enables branch-to-branch at WAN level and on all three hubs and measures both routes and workload forwarding.
 
-The matched mixed-setting and all-enabled baselines have identical DC-prefix firewall winners and **0 changed traffic outcomes out of 42 directional cells**. WAN-level B2B was already enabled; only Japan's hub flag changes from false to true. Original NVA sources, metadata, HRPs and PrivateTraffic routing intent are held constant. This isolates the flag for the baseline; it does not prove that the flag is irrelevant for every route history or supported topology.
+The matched mixed-setting and all-enabled baselines have identical DC-prefix firewall winners and **0 changed traffic outcomes out of 24 DC/Azure directional cells**. WAN-level B2B was already enabled; only Japan's hub flag changes from false to true. Original NVA sources, metadata, HRPs and PrivateTraffic routing intent are held constant. This isolates the flag for the baseline; it does not prove that the flag is irrelevant for every route history or supported topology.
 
 **The B1 history dependency also reproduces with B2B enabled on every hub.** Under ExpressRoute HRP, EU/US initially retain remote Japan length three. Withdrawing only Japan's direct export selects local length-five paths; returning the export leaves those longer local paths selected. The separate EU length-four versus remote length-three control repeats the dependency. Source bytes/metadata and HRPs are identical between the initial and returned states. The mixed B2B flags therefore do not explain away that observation.
 
-Traffic and routing are separate findings: B1's returned three-prepend state still passes only 28/42 TCP and 32/42 ICMP directions. VPN HRP selects longer local Japan paths in its measured state, with 32/42 TCP and 34/42 ICMP passes; that sequential control is not proof of a universal ER/VPN difference independent of route history. B2 passes 36/42 for both: all six failures are Japan workload <-> Azure spoke directions. A with the workload UDR passes 38/42 TCP and 40/42 ICMP; EU/US DC -> Japan workload fails both protocols, and the reverse initiated DC traffic fails TCP but passes ICMP. None is an all-pairs forwarding success.
+Traffic and routing are separate findings. Acceptance now covers only the **24 DC <-> Azure-spoke directions**, not DC-to-DC or auxiliary spoke-to-spoke traffic. B1's returned three-prepend state passes 10/24 TCP and 14/24 ICMP. VPN HRP selects longer local Japan paths in its measured state, with 14/24 TCP and 16/24 ICMP passes; that sequential control is not proof of a universal ER/VPN difference independent of route history. B2 without a workload UDR passes 18/24 for both: all six failures are Japan workload <-> Azure spoke directions. **A with its workload UDR passes 24/24 TCP and ICMP** and therefore meets the requested DC/Azure reachability criterion. Its historical DC-to-DC failures are outside that criterion. Reachability acceptance is not by itself proof that every packet used the intended backbone.
+
+**The new reversible B2 control identifies the missing Japan workload subnet UDR.** With three spoke-prefix routes to `10.130.0.4`, B2 passes **24/24 TCP and ICMP**. Removing those routes restores 18/24. BIRD policy, NVA selections and firewall winners remain unchanged; the workload NIC changes from the system `10.0.0.0/8 -> None` drop route to the explicit NVA next hops.
 
 ## One topology, two possible backbones
 ![Three secured Azure hubs and a separate four-site private WireGuard mesh](./assets/topology.svg)
@@ -32,432 +34,35 @@ Six unique mesh adjacencies plus six Azure-facing adjacencies make **12 unique B
 
 | Design | All-hub HRP | NVA policy |
 |---|---|---|
-| A: Microsoft | ASPath | Foreign DC/spoke Azure imports at LP 400; three nonlocal prepends on EU/US/JP; optional JP workload UDR measured separately |
+| A: Microsoft | ASPath | Foreign DC/spoke Azure imports at LP 400; three nonlocal prepends on EU/US/JP; JP workload UDR needed for observed 24/24 reachability; policy-only control measured separately |
 | B1: customer | ExpressRoute; VpnGateway measured separately | Spoke-only Azure imports; three extra nonlocal EU/US prepends; JP none |
-| B2: customer | ASPath | Spoke-only Azure imports; zero extra EU/US/JP prepends |
+| B2: customer | ASPath | Spoke-only Azure imports; zero extra EU/US/JP prepends; three-spoke JP workload UDR |
 
 The [documented HRP ordering](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference) prioritizes locality under ExpressRoute/VPN and path length under ASPath. The B1 initial, withdrawn and returned states below expose the measured selection history rather than assuming every HRP update recomputes the same winner.
 
 ## Forwarding results, not just routing tables
 
-| Measured state | TCP / 42 | ICMP / 42 |
-|---|---|---|
-| [Mixed baseline](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-mixed-baseline-20261017/baseline/traffic-summary.json) | 28 | 32 |
-| [All B2B baseline](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-enabled-baseline-20261017/baseline/traffic-summary.json) | 28 | 32 |
-| [A, NVA policy only](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A/traffic-summary.json) | 36 | 36 |
-| [A, plus JP workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/traffic-summary.json) | 38 | 40 |
-| [B1, ExpressRoute initial](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1/traffic-summary.json) | 28 | 32 |
-| [B1, JP direct prefix withdrawn](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-withdrawn/traffic-summary.json) | 28 | 32 |
-| [B1, JP direct prefix returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/traffic-summary.json) | 28 | 32 |
-| [B1 one-ASN, initial](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN/traffic-summary.json) | 30 | 33 |
-| [B1 one-ASN, withdrawn](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN-withdrawn/traffic-summary.json) | 30 | 33 |
-| [B1 one-ASN, returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN-returned/traffic-summary.json) | 30 | 33 |
-| [B1, VPN HRP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-VPN-20261017/B1-VPN/traffic-summary.json) | 32 | 34 |
-| [B2, zero extra EU/US prepends](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/traffic-summary.json) | 36 | 36 |
-
-Every measured state has full firewall effective tables for all three hubs, paired stable DC-prefix winners at least 120 seconds apart, full BIRD sources and selected/alternative routes on all four routers, and an explicitly sourced 42-direction TCP/ICMP matrix. The seven endpoints are four synthetic DCs and three Azure spokes: 12 DC-to-DC, 24 DC/spoke and six spoke-to-spoke directions. TCP requires HTTP 200 on the private port 5201 listener and matching local/remote addresses; ICMP uses source-bound ping. P/F below means TCP PASS / ICMP FAIL.
-
-Bounded tcpdump captures on every router observe inner test packets on physical, WireGuard and XFRM interfaces; management traffic and encrypted transport payloads are not collected. The interface observations are not a throughput measurement or a complete symmetry proof. Failed SYNs/ICMP attempts can still appear in a capture. In particular, A's policy-only EU/JP DC reachability is not proof of the intended Virtual WAN path: the measured EU-to-JP DC packets appeared on EU's physical interfaces, but the expected Japan NVA/XFRM segment was not observed; the reverse initiated DC traffic was not observed on the NVAs. The peered underlay and workload routing must be considered rather than treating an HTTP success as proof of Microsoft interhub transit. `!` in a BIRD table is a kernel-export failure marker, not healthy Linux forwarding. A collector verdict of PASS means complete measurements and exact configuration closure, not 42 successful traffic directions.
-
-## How to read the captured tables
-
-Each design below contains the full EU and Japan firewall table, not a filtered supporting prefix. US is collected too and available in the matched evidence. EU, Japan and CN NVA tables include all seven DC/spoke prefixes. BGP next hop and BIRD resolution are distinct attributes. `n/a` means absent on a static route; `empty` means a blank firewall AS path. The primary A state includes the workload UDR; primary B1 is the returned three-prepend state.
-
-## A: Microsoft backbone preferred
-
-All hubs use `ASPath`. The three Azure-facing NVAs accept foreign DC and spoke routes from Azure at LP 400. EU/US/JP add three extra own-AS copies for nonlocal DC exports. The export source guard prevents feeding an Azure-learned best route back into Azure. CN remains mesh-only, so this is not an all-prefix Microsoft-only design.
-
-The primary capture includes the five-prefix Japan workload UDR to `10.130.0.4`; the policy-only control is measured separately. The UDR covers EU/US DCs and all three Azure spokes, not CN's transport endpoint.
-
-Matched state: [A, plus JP workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/scenario-result.json). Full BIRD configurations: [EU](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/router-eu.conf), [US](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/router-us.conf), [JP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/router-jp.conf), [CN](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/router-cn.conf).
-
-### A: complete EU firewall table
-
-| Prefix | ASPath | NextHopType |
-|---|---|---|
-| `10.210.0.0/24` | empty | Virtual Network Connection |
-| `10.10.0.0/24` | empty | Virtual Network Connection |
-| `10.110.0.0/24` | `65011` | HubBgpConnection |
-| `10.140.0.0/24` | `65011-65011-65011-65011-65014` | HubBgpConnection |
-| `10.130.0.0/24` | `65520-65520-65013` | Remote Hub |
-| `10.30.0.0/24` | `65520-65520` | Remote Hub |
-| `10.220.0.0/24` | `65520-65520` | Remote Hub |
-| `10.120.0.0/24` | `65520-65520-65012` | Remote Hub |
-| `10.20.0.0/24` | `65520-65520` | Remote Hub |
-| `0.0.0.0/0` | empty | Internet |
-
-### A: complete JP firewall table
-
-| Prefix | ASPath | NextHopType |
-|---|---|---|
-| `10.140.0.0/24` | `65013-65013-65013-65013-65014` | VPN_S2S_Gateway |
-| `10.130.0.0/24` | `65013` | VPN_S2S_Gateway |
-| `10.10.0.0/24` | `65520-65520` | Remote Hub |
-| `10.220.0.0/24` | `65520-65520` | Remote Hub |
-| `10.120.0.0/24` | `65520-65520-65012` | Remote Hub |
-| `10.20.0.0/24` | `65520-65520` | Remote Hub |
-| `10.210.0.0/24` | `65520-65520` | Remote Hub |
-| `10.110.0.0/24` | `65520-65520-65011` | Remote Hub |
-| `10.30.0.0/24` | empty | Virtual Network Connection |
-| `0.0.0.0/0` | empty | Internet |
-
-### A: EU selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `own_dc` | `n/a` | `via 10.210.0.1 on eth0` | `n/a` | n/a | `*` |
-| `10.120.0.0/24` | `azure_0` | `10.210.0.1` | `via 10.210.0.1 on eth0` | `65515 65520 65520 65012` | 400 | `*` |
-| `10.130.0.0/24` | `azure_0` | `10.210.0.1` | `via 10.210.0.1 on eth0` | `65515 65520 65520 65013` | 400 | `*` |
-| `10.140.0.0/24` | `mesh_cn` | `172.31.0.10` | `dev wgeucn` | `65014` | 100 | `*` |
-| `10.10.0.0/24` | `azure_0` | `10.210.0.1` | `via 10.210.0.1 on eth0` | `65515` | 400 | `*` |
-| `10.20.0.0/24` | `azure_0` | `10.210.0.1` | `via 10.210.0.1 on eth0` | `65515 65520 65520` | 400 | `*` |
-| `10.30.0.0/24` | `azure_0` | `10.210.0.1` | `via 10.210.0.1 on eth0` | `65515 65520 65520` | 400 | `*` |
-
-### A: JP selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `azure_1` | `169.254.21.6` | `via 169.254.21.6 on xfrm42` | `65515 65520 65520 65011` | 400 | `!` |
-| `10.120.0.0/24` | `azure_1` | `169.254.21.6` | `via 169.254.21.6 on xfrm42` | `65515 65520 65520 65012` | 400 | `!` |
-| `10.130.0.0/24` | `own_dc` | `n/a` | `dev eth0` | `n/a` | n/a | `*` |
-| `10.140.0.0/24` | `mesh_cn` | `172.31.0.22` | `dev wgjpcn` | `65014` | 100 | `*` |
-| `10.10.0.0/24` | `azure_1` | `169.254.21.6` | `via 169.254.21.6 on xfrm42` | `65515 65520 65520` | 400 | `!` |
-| `10.20.0.0/24` | `azure_1` | `169.254.21.6` | `via 169.254.21.6 on xfrm42` | `65515 65520 65520` | 400 | `!` |
-| `10.30.0.0/24` | `azure_1` | `169.254.21.6` | `via 169.254.21.6 on xfrm42` | `65515` | 400 | `!` |
-
-### A: CN selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `mesh_eu` | `172.31.0.9` | `dev wgeucn` | `65011` | 100 | `*` |
-| `10.120.0.0/24` | `mesh_us` | `172.31.0.17` | `dev wguscn` | `65012` | 100 | `*` |
-| `10.130.0.0/24` | `mesh_jp` | `172.31.0.21` | `dev wgjpcn` | `65013` | 100 | `*` |
-| `10.140.0.0/24` | `own_dc` | `n/a` | `dev eth0` | `n/a` | n/a | `*` |
-| `10.10.0.0/24` | `mesh_eu` | `172.31.0.9` | `dev wgeucn` | `65011 65515` | 300 | `*` |
-| `10.20.0.0/24` | `mesh_us` | `172.31.0.17` | `dev wguscn` | `65012 65515` | 300 | `*` |
-| `10.30.0.0/24` | `mesh_jp` | `172.31.0.21` | `dev wgjpcn` | `65013 65515` | 300 | `*` |
-
-### A: captured EU export policy
-
-```bird
-filter azure_export {
-  if net ~ [10.110.0.0/24, 10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24] &&
-     (proto = "own_dc" || proto ~ "mesh_*") then {
-        if net != 10.110.0.0/24 then {
-            bgp_path.prepend(65011);
-            bgp_path.prepend(65011);
-            bgp_path.prepend(65011);
-        }
-        accept;
-  }
-  reject;
-}
-```
-
-### A: all 42 traffic directions
-
-| Source / destination | dc-eu | dc-us | dc-jp | cn | spoke-eu | spoke-us | spoke-jp |
-|---|---|---|---|---|---|---|---|
-| dc-eu | - | P/P | F/F | P/P | P/P | P/P | P/P |
-| dc-us | P/P | - | F/F | P/P | P/P | P/P | P/P |
-| dc-jp | F/P | F/P | - | P/P | P/P | P/P | P/P |
-| cn | P/P | P/P | P/P | - | P/P | P/P | P/P |
-| spoke-eu | P/P | P/P | P/P | P/P | - | P/P | P/P |
-| spoke-us | P/P | P/P | P/P | P/P | P/P | - | P/P |
-| spoke-jp | P/P | P/P | P/P | P/P | P/P | P/P | - |
-
-## B1: Customer backbone through HRP
-
-The primary capture uses `ExpressRoute` on all hubs, the original three extra EU/US nonlocal prepends, no extra Japan prepends, and spoke-only Azure imports. It is the final state after withdrawing and restoring only Japan's direct `10.130.0.0/24` Azure export. Mesh exports and tunnel configurations are unchanged.
-
-The initial state, withdrawal, return, one-ASN-difference replay and `VpnGateway` HRP control are reported separately below. A final local winner must not be presented as proof that the HRP change alone produced it.
-
-Matched state: [B1, JP direct prefix returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/scenario-result.json). Full BIRD configurations: [EU](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-eu.conf), [US](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-us.conf), [JP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-jp.conf), [CN](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-cn.conf).
-
-### B1: complete EU firewall table
-
-| Prefix | ASPath | NextHopType |
-|---|---|---|
-| `10.110.0.0/24` | `65011` | HubBgpConnection |
-| `10.210.0.0/24` | empty | Virtual Network Connection |
-| `10.10.0.0/24` | empty | Virtual Network Connection |
-| `10.130.0.0/24` | `65011-65011-65011-65011-65013` | HubBgpConnection |
-| `10.30.0.0/24` | `65520-65520` | Remote Hub |
-| `10.220.0.0/24` | `65520-65520` | Remote Hub |
-| `10.120.0.0/24` | `65520-65520-65012` | Remote Hub |
-| `10.140.0.0/24` | `65520-65520-65013-65014` | Remote Hub |
-| `10.20.0.0/24` | `65520-65520` | Remote Hub |
-| `0.0.0.0/0` | empty | Internet |
-
-### B1: complete JP firewall table
-
-| Prefix | ASPath | NextHopType |
-|---|---|---|
-| `10.140.0.0/24` | `65013-65014` | VPN_S2S_Gateway |
-| `10.120.0.0/24` | `65013-65012` | VPN_S2S_Gateway |
-| `10.110.0.0/24` | `65013-65011` | VPN_S2S_Gateway |
-| `10.30.0.0/24` | empty | Virtual Network Connection |
-| `10.130.0.0/24` | `65013` | VPN_S2S_Gateway |
-| `10.10.0.0/24` | `65520-65520` | Remote Hub |
-| `10.220.0.0/24` | `65520-65520` | Remote Hub |
-| `10.20.0.0/24` | `65520-65520` | Remote Hub |
-| `10.210.0.0/24` | `65520-65520` | Remote Hub |
-| `0.0.0.0/0` | empty | Internet |
-
-### B1: EU selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `own_dc` | `n/a` | `via 10.210.0.1 on eth0` | `n/a` | n/a | `*` |
-| `10.120.0.0/24` | `mesh_us` | `172.31.0.2` | `dev wgeuus` | `65012` | 100 | `*` |
-| `10.130.0.0/24` | `mesh_jp` | `172.31.0.6` | `dev wgeujp` | `65013` | 100 | `*` |
-| `10.140.0.0/24` | `mesh_cn` | `172.31.0.10` | `dev wgeucn` | `65014` | 100 | `*` |
-| `10.10.0.0/24` | `azure_0` | `10.210.0.1` | `via 10.210.0.1 on eth0` | `65515` | 300 | `*` |
-| `10.20.0.0/24` | `mesh_us` | `172.31.0.2` | `dev wgeuus` | `65012 65515` | 300 | `*` |
-| `10.30.0.0/24` | `mesh_jp` | `172.31.0.6` | `dev wgeujp` | `65013 65515` | 300 | `*` |
-
-### B1: JP selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `mesh_eu` | `172.31.0.5` | `dev wgeujp` | `65011` | 100 | `*` |
-| `10.120.0.0/24` | `mesh_us` | `172.31.0.13` | `dev wgusjp` | `65012` | 100 | `*` |
-| `10.130.0.0/24` | `own_dc` | `n/a` | `dev eth0` | `n/a` | n/a | `*` |
-| `10.140.0.0/24` | `mesh_cn` | `172.31.0.22` | `dev wgjpcn` | `65014` | 100 | `*` |
-| `10.10.0.0/24` | `mesh_eu` | `172.31.0.5` | `dev wgeujp` | `65011 65515` | 300 | `*` |
-| `10.20.0.0/24` | `mesh_us` | `172.31.0.13` | `dev wgusjp` | `65012 65515` | 300 | `*` |
-| `10.30.0.0/24` | `azure_1` | `169.254.21.6` | `via 169.254.21.6 on xfrm42` | `65515` | 300 | `!` |
-
-### B1: CN selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `mesh_eu` | `172.31.0.9` | `dev wgeucn` | `65011` | 100 | `*` |
-| `10.120.0.0/24` | `mesh_us` | `172.31.0.17` | `dev wguscn` | `65012` | 100 | `*` |
-| `10.130.0.0/24` | `mesh_jp` | `172.31.0.21` | `dev wgjpcn` | `65013` | 100 | `*` |
-| `10.140.0.0/24` | `own_dc` | `n/a` | `dev eth0` | `n/a` | n/a | `*` |
-| `10.10.0.0/24` | `mesh_eu` | `172.31.0.9` | `dev wgeucn` | `65011 65515` | 300 | `*` |
-| `10.20.0.0/24` | `mesh_us` | `172.31.0.17` | `dev wguscn` | `65012 65515` | 300 | `*` |
-| `10.30.0.0/24` | `mesh_jp` | `172.31.0.21` | `dev wgjpcn` | `65013 65515` | 300 | `*` |
-
-### B1: captured EU export policy
-
-```bird
-filter azure_export {
-  if net ~ [10.110.0.0/24, 10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24] &&
-     (proto = "own_dc" || proto ~ "mesh_*") then {
-        if net != 10.110.0.0/24 then {
-            bgp_path.prepend(65011);
-            bgp_path.prepend(65011);
-            bgp_path.prepend(65011);
-        }
-        accept;
-  }
-  reject;
-}
-```
-
-### B1: all 42 traffic directions
-
-| Source / destination | dc-eu | dc-us | dc-jp | cn | spoke-eu | spoke-us | spoke-jp |
-|---|---|---|---|---|---|---|---|
-| dc-eu | - | P/P | P/P | P/P | P/P | F/F | P/P |
-| dc-us | P/P | - | P/P | P/P | F/F | P/P | P/P |
-| dc-jp | P/P | P/P | - | P/P | F/F | F/F | F/F |
-| cn | P/P | P/P | P/P | - | F/F | F/F | P/P |
-| spoke-eu | P/P | F/P | F/F | F/P | - | P/P | P/P |
-| spoke-us | F/P | P/P | F/F | F/P | P/P | - | P/P |
-| spoke-jp | P/P | P/P | F/F | P/P | P/P | P/P | - |
-
-## B2: Customer backbone through AS-path control
-
-All hubs use `ASPath`. EU/US nonlocal extra prepends are removed; Japan still has no extra prepends. Azure imports remain spoke-only, so NVAs keep foreign DCs on their mesh. Removing prepends shortens the local offer; this is not a claim that adding prepends everywhere favors the customer backbone.
-
-Matched state: [B2, zero extra EU/US prepends](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/scenario-result.json). Full BIRD configurations: [EU](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-eu.conf), [US](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-us.conf), [JP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-jp.conf), [CN](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-cn.conf).
-
-### B2: complete EU firewall table
-
-| Prefix | ASPath | NextHopType |
-|---|---|---|
-| `10.110.0.0/24` | `65011` | HubBgpConnection |
-| `10.140.0.0/24` | `65011-65014` | HubBgpConnection |
-| `10.130.0.0/24` | `65011-65013` | HubBgpConnection |
-| `10.120.0.0/24` | `65011-65012` | HubBgpConnection |
-| `10.210.0.0/24` | empty | Virtual Network Connection |
-| `10.10.0.0/24` | empty | Virtual Network Connection |
-| `10.30.0.0/24` | `65520-65520` | Remote Hub |
-| `10.220.0.0/24` | `65520-65520` | Remote Hub |
-| `10.20.0.0/24` | `65520-65520` | Remote Hub |
-| `0.0.0.0/0` | empty | Internet |
-
-### B2: complete JP firewall table
-
-| Prefix | ASPath | NextHopType |
-|---|---|---|
-| `10.140.0.0/24` | `65013-65014` | VPN_S2S_Gateway |
-| `10.120.0.0/24` | `65013-65012` | VPN_S2S_Gateway |
-| `10.110.0.0/24` | `65013-65011` | VPN_S2S_Gateway |
-| `10.130.0.0/24` | `65013` | VPN_S2S_Gateway |
-| `10.10.0.0/24` | `65520-65520` | Remote Hub |
-| `10.220.0.0/24` | `65520-65520` | Remote Hub |
-| `10.20.0.0/24` | `65520-65520` | Remote Hub |
-| `10.210.0.0/24` | `65520-65520` | Remote Hub |
-| `10.30.0.0/24` | empty | Virtual Network Connection |
-| `0.0.0.0/0` | empty | Internet |
-
-### B2: EU selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `own_dc` | `n/a` | `via 10.210.0.1 on eth0` | `n/a` | n/a | `*` |
-| `10.120.0.0/24` | `mesh_us` | `172.31.0.2` | `dev wgeuus` | `65012` | 100 | `*` |
-| `10.130.0.0/24` | `mesh_jp` | `172.31.0.6` | `dev wgeujp` | `65013` | 100 | `*` |
-| `10.140.0.0/24` | `mesh_cn` | `172.31.0.10` | `dev wgeucn` | `65014` | 100 | `*` |
-| `10.10.0.0/24` | `azure_0` | `10.210.0.1` | `via 10.210.0.1 on eth0` | `65515` | 300 | `*` |
-| `10.20.0.0/24` | `mesh_us` | `172.31.0.2` | `dev wgeuus` | `65012 65515` | 300 | `*` |
-| `10.30.0.0/24` | `mesh_jp` | `172.31.0.6` | `dev wgeujp` | `65013 65515` | 300 | `*` |
-
-### B2: JP selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `mesh_eu` | `172.31.0.5` | `dev wgeujp` | `65011` | 100 | `*` |
-| `10.120.0.0/24` | `mesh_us` | `172.31.0.13` | `dev wgusjp` | `65012` | 100 | `*` |
-| `10.130.0.0/24` | `own_dc` | `n/a` | `dev eth0` | `n/a` | n/a | `*` |
-| `10.140.0.0/24` | `mesh_cn` | `172.31.0.22` | `dev wgjpcn` | `65014` | 100 | `*` |
-| `10.10.0.0/24` | `mesh_eu` | `172.31.0.5` | `dev wgeujp` | `65011 65515` | 300 | `*` |
-| `10.20.0.0/24` | `mesh_us` | `172.31.0.13` | `dev wgusjp` | `65012 65515` | 300 | `*` |
-| `10.30.0.0/24` | `azure_1` | `169.254.21.6` | `via 169.254.21.6 on xfrm42` | `65515` | 300 | `!` |
-
-### B2: CN selected NVA routes
-
-| Prefix | Protocol | BGP next hop | BIRD resolution | ASPath | LP | Marker |
-|---|---|---|---|---|---|---|
-| `10.110.0.0/24` | `mesh_eu` | `172.31.0.9` | `dev wgeucn` | `65011` | 100 | `*` |
-| `10.120.0.0/24` | `mesh_us` | `172.31.0.17` | `dev wguscn` | `65012` | 100 | `*` |
-| `10.130.0.0/24` | `mesh_jp` | `172.31.0.21` | `dev wgjpcn` | `65013` | 100 | `*` |
-| `10.140.0.0/24` | `own_dc` | `n/a` | `dev eth0` | `n/a` | n/a | `*` |
-| `10.10.0.0/24` | `mesh_eu` | `172.31.0.9` | `dev wgeucn` | `65011 65515` | 300 | `*` |
-| `10.20.0.0/24` | `mesh_us` | `172.31.0.17` | `dev wguscn` | `65012 65515` | 300 | `*` |
-| `10.30.0.0/24` | `mesh_jp` | `172.31.0.21` | `dev wgjpcn` | `65013 65515` | 300 | `*` |
-
-### B2: captured EU export policy
-
-```bird
-filter azure_export {
-  if net ~ [10.110.0.0/24, 10.120.0.0/24, 10.130.0.0/24, 10.140.0.0/24] &&
-     (proto = "own_dc" || proto ~ "mesh_*") then {
-        accept;
-  }
-  reject;
-}
-```
-
-### B2: all 42 traffic directions
-
-| Source / destination | dc-eu | dc-us | dc-jp | cn | spoke-eu | spoke-us | spoke-jp |
-|---|---|---|---|---|---|---|---|
-| dc-eu | - | P/P | P/P | P/P | P/P | P/P | P/P |
-| dc-us | P/P | - | P/P | P/P | P/P | P/P | P/P |
-| dc-jp | P/P | P/P | - | P/P | F/F | F/F | F/F |
-| cn | P/P | P/P | P/P | - | P/P | P/P | P/P |
-| spoke-eu | P/P | P/P | F/F | P/P | - | P/P | P/P |
-| spoke-us | P/P | P/P | F/F | P/P | P/P | - | P/P |
-| spoke-jp | P/P | P/P | F/F | P/P | P/P | P/P | - |
-
-## B1 initial selection and controlled route return
-
-| State | EU Japan path | US Japan path |
-|---|---|---|
-| B1, ExpressRoute initial | `65520-65520-65013` (Remote Hub) | `65520-65520-65013` (Remote Hub) |
-| B1, JP direct prefix withdrawn | `65011-65011-65011-65011-65013` (HubBgpConnection) | `65012-65012-65012-65012-65013` (HubBgpConnection) |
-| B1, JP direct prefix returned | `65011-65011-65011-65011-65013` (HubBgpConnection) | `65012-65012-65012-65012-65013` (HubBgpConnection) |
-| B1 one-ASN, initial | `65520-65520-65013` (Remote Hub) | `65012-65012-65012-65012-65013` (HubBgpConnection) |
-| B1 one-ASN, withdrawn | `65011-65011-65011-65013` (HubBgpConnection) | `65012-65012-65012-65012-65013` (HubBgpConnection) |
-| B1 one-ASN, returned | `65011-65011-65011-65013` (HubBgpConnection) | `65012-65012-65012-65012-65013` (HubBgpConnection) |
-| B1, VPN HRP | `65011-65011-65011-65011-65013` (HubBgpConnection) | `65012-65012-65012-65012-65013` (HubBgpConnection) |
-
-The three-prepend control offers local length five versus remote length three; the separate EU two-prepend control offers local four versus remote three. Only Japan's direct Azure prefix export is withdrawn; mesh exports and tunnels stay up. The earlier mixed-setting controls demonstrated different winners with identical configuration before/after re-advertisement. These new all-enabled results must be read alongside them, not used to invent an Azure-internal race/cache explanation. The published two-or-more-longer HRP caveat does not by itself explain every one-ASN case.
-
-## Packet-interface evidence
-
-| State / packet direction | EU | US | JP | CN |
-|---|---|---|---|---|
-| A, NVA policy only: `10.110.0.10` -> `10.130.0.10` | enP40243s1 In, enP40243s1 Out, eth0 In, eth0 Out | not observed | not observed | not observed |
-| A, NVA policy only: `10.130.0.10` -> `10.110.0.10` | not observed | not observed | not observed | not observed |
-| A, NVA policy only: `10.10.0.10` -> `10.130.0.10` | not observed | not observed | enP2749s1 Out, eth0 Out, xfrm42 In | not observed |
-| A, NVA policy only: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | not observed | not observed |
-| A, plus JP workload UDR: `10.110.0.10` -> `10.130.0.10` | enP40243s1 In, enP40243s1 Out, eth0 In, eth0 Out | not observed | not observed | not observed |
-| A, plus JP workload UDR: `10.130.0.10` -> `10.110.0.10` | enP40243s1 In, enP40243s1 Out, eth0 In, eth0 Out | not observed | enP2749s1 In, eth0 In, xfrm42 Out | not observed |
-| A, plus JP workload UDR: `10.10.0.10` -> `10.130.0.10` | not observed | not observed | enP2749s1 Out, eth0 Out, xfrm41 In, xfrm42 In | not observed |
-| A, plus JP workload UDR: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | enP2749s1 In, eth0 In, xfrm42 Out | not observed |
-| B1, JP direct prefix returned: `10.110.0.10` -> `10.130.0.10` | enP40243s1 In, eth0 In, wgeujp Out | not observed | enP2749s1 Out, eth0 Out, wgeujp In | not observed |
-| B1, JP direct prefix returned: `10.130.0.10` -> `10.110.0.10` | not observed | not observed | not observed | not observed |
-| B1, JP direct prefix returned: `10.10.0.10` -> `10.130.0.10` | enP40243s1 In, eth0 In, wgeujp Out | not observed | enP2749s1 Out, eth0 Out, wgeujp In | not observed |
-| B1, JP direct prefix returned: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | not observed | not observed |
-| B2, zero extra EU/US prepends: `10.110.0.10` -> `10.130.0.10` | enP40243s1 In, eth0 In, wgeujp Out | not observed | enP2749s1 Out, eth0 Out, wgeujp In | not observed |
-| B2, zero extra EU/US prepends: `10.130.0.10` -> `10.110.0.10` | not observed | not observed | not observed | not observed |
-| B2, zero extra EU/US prepends: `10.10.0.10` -> `10.130.0.10` | enP40243s1 In, eth0 In, wgeujp Out | not observed | enP2749s1 Out, eth0 Out, wgeujp In | not observed |
-| B2, zero extra EU/US prepends: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | not observed | not observed |
-
-## Conclusions and boundaries
-
-Enabling Japan's hub flag alone did not change this baseline's firewall winners or traffic outcomes. The configuration inconsistency therefore was not sufficient to explain those failures. The per-design traffic matrices above establish exactly which workload directions passed; selected routes alone do not establish a successful backbone design. Residual failures and any `!` flags remain failures, not success-shaped exceptions. No bandwidth advantage was measured. Configuration, original hub settings and original VM power states were restored after the rerun.
-
-[Full rerun report and raw evidence](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-summary-20261017/README.md). Earlier mixed-setting results and their original verdicts remain linked in [references.md](./references.md).
-
-## Retrieve effective routes
-
-With routing intent, query the firewall, not a spoke connection:
-
-```powershell
-az network vhub get-effective-routes -n $hub -g $rg `
-  --resource-type 'AzureFirewalls' `
-  --resource-id $(az network vhub show -g $rg -n $hub --query 'azureFirewall.id' -o tsv) `
-  --query 'value[].{Prefix:addressPrefixes[0], ASPath:asPath, NextHopType:nextHopType}' -o table
-```
-
-Without routing intent, query the VNet connection using the singular discriminator:
-
-```powershell
-$connectionId = az network vhub connection show -g $rg --vhub-name $hub `
-  -n $connection --query id -o tsv
-az network vhub get-effective-routes -n $hub -g $rg `
-  --resource-type 'HubVirtualNetworkConnection' --resource-id $connectionId -o json
-```
-
-On each NVA, retain `birdc show route table lab4 all`, `birdc show route export azure_0 all`, `birdc show route export azure_1 all`, `ip -j route show table main`, and the full BIRD configuration. CN has no Azure peers.
-
-## What the three designs configure
-
-| Design | All-hub HRP | NVA policy |
-|---|---|---|
-| A: Microsoft | ASPath | Foreign DC/spoke Azure imports at LP 400; three nonlocal prepends on EU/US/JP; optional JP workload UDR measured separately |
-| B1: customer | ExpressRoute; VpnGateway measured separately | Spoke-only Azure imports; three extra nonlocal EU/US prepends; JP none |
-| B2: customer | ASPath | Spoke-only Azure imports; zero extra EU/US/JP prepends |
-
-The [documented HRP ordering](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference) prioritizes locality under ExpressRoute/VPN and path length under ASPath. The B1 initial, withdrawn and returned states below expose the measured selection history rather than assuming every HRP update recomputes the same winner.
-
-## Forwarding results, not just routing tables
-
-| Measured state | TCP / 42 | ICMP / 42 |
-|---|---|---|
-| [Mixed baseline](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-mixed-baseline-20261017/baseline/traffic-summary.json) | 28 | 32 |
-| [All B2B baseline](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-enabled-baseline-20261017/baseline/traffic-summary.json) | 28 | 32 |
-| [A, NVA policy only](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A/traffic-summary.json) | 36 | 36 |
-| [A, plus JP workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/traffic-summary.json) | 38 | 40 |
-| [B1, ExpressRoute initial](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1/traffic-summary.json) | 28 | 32 |
-| [B1, JP direct prefix withdrawn](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-withdrawn/traffic-summary.json) | 28 | 32 |
-| [B1, JP direct prefix returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/traffic-summary.json) | 28 | 32 |
-| [B1 one-ASN, initial](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN/traffic-summary.json) | 30 | 33 |
-| [B1 one-ASN, withdrawn](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN-withdrawn/traffic-summary.json) | 30 | 33 |
-| [B1 one-ASN, returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN-returned/traffic-summary.json) | 30 | 33 |
-| [B1, VPN HRP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-VPN-20261017/B1-VPN/traffic-summary.json) | 32 | 34 |
-| [B2, zero extra EU/US prepends](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/traffic-summary.json) | 36 | 36 |
-
-Every measured state has full firewall effective tables for all three hubs, paired stable DC-prefix winners at least 120 seconds apart, full BIRD sources and selected/alternative routes on all four routers, and an explicitly sourced 42-direction TCP/ICMP matrix. The seven endpoints are four synthetic DCs and three Azure spokes: 12 DC-to-DC, 24 DC/spoke and six spoke-to-spoke directions. TCP requires HTTP 200 on the private port 5201 listener and matching local/remote addresses; ICMP uses source-bound ping. P/F below means TCP PASS / ICMP FAIL.
-
-Bounded tcpdump captures on every router observe inner test packets on physical, WireGuard and XFRM interfaces; management traffic and encrypted transport payloads are not collected. The interface observations are not a throughput measurement or a complete symmetry proof. Failed SYNs/ICMP attempts can still appear in a capture. In particular, A's policy-only EU/JP DC reachability is not proof of the intended Virtual WAN path: the measured EU-to-JP DC packets appeared on EU's physical interfaces, but the expected Japan NVA/XFRM segment was not observed; the reverse initiated DC traffic was not observed on the NVAs. The peered underlay and workload routing must be considered rather than treating an HTTP success as proof of Microsoft interhub transit. `!` in a BIRD table is a kernel-export failure marker, not healthy Linux forwarding. A collector verdict of PASS means complete measurements and exact configuration closure, not 42 successful traffic directions.
+| Measured state | TCP / 24 | ICMP / 24 | DC/Azure reachability |
+|---|---|---|---|
+| [Mixed baseline](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-mixed-baseline-20261017/baseline/traffic-summary.json) | 10 | 14 | FAIL |
+| [All B2B baseline](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-enabled-baseline-20261017/baseline/traffic-summary.json) | 10 | 14 | FAIL |
+| [A, NVA policy only](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A/traffic-summary.json) | 18 | 18 | FAIL |
+| [A, plus JP workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-A-20261017/A-workload-UDR/traffic-summary.json) | 24 | 24 | PASS |
+| [B1, ExpressRoute initial](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1/traffic-summary.json) | 10 | 14 | FAIL |
+| [B1, JP direct prefix withdrawn](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-withdrawn/traffic-summary.json) | 10 | 14 | FAIL |
+| [B1, JP direct prefix returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/traffic-summary.json) | 10 | 14 | FAIL |
+| [B1 one-ASN, initial](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN/traffic-summary.json) | 12 | 15 | FAIL |
+| [B1 one-ASN, withdrawn](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN-withdrawn/traffic-summary.json) | 12 | 15 | FAIL |
+| [B1 one-ASN, returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-one-ASN-20261017/B1-one-ASN-returned/traffic-summary.json) | 12 | 15 | FAIL |
+| [B1, VPN HRP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-VPN-20261017/B1-VPN/traffic-summary.json) | 14 | 16 | FAIL |
+| [B2, zero extra EU/US prepends](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/traffic-summary.json) | 18 | 18 | FAIL |
+| [B2, before workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-before/traffic-summary.json) | 18 | 18 | FAIL |
+| [B2, three-spoke workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/traffic-summary.json) | 24 | 24 | PASS |
+| [B2, workload UDR removed again](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-reverted/traffic-summary.json) | 18 | 18 | FAIL |
+
+Every measured state has full firewall effective tables for all three hubs, paired stable DC-prefix winners at least 120 seconds apart, full BIRD sources and selected/alternative routes on all four routers. The historical rerun has an explicitly sourced 42-direction TCP/ICMP matrix; the new B2 steering control sends only the 24 requested DC/Azure directions. The seven endpoints are four synthetic DCs and three Azure spokes: 12 DC-to-DC, 24 DC/spoke and six spoke-to-spoke directions. **Only the 24 DC/Azure directions determine acceptance.** The twelve DC-to-DC directions are excluded, and the six spoke-to-spoke directions are auxiliary. The raw 42-cell files and their original verdicts remain unchanged; `acceptance.csv` and the tables below derive the requested scope explicitly. TCP requires HTTP 200 on the private port 5201 listener and matching local/remote addresses; ICMP uses source-bound ping. P/F below means TCP PASS / ICMP FAIL.
+
+Bounded tcpdump captures on every router observe inner test packets on physical, WireGuard and XFRM interfaces; management traffic and encrypted transport payloads are not collected. The interface observations are not a throughput measurement or a complete symmetry proof. Failed SYNs/ICMP attempts can still appear in a capture. The peered underlay and workload routing must be considered rather than treating an HTTP success as proof of Microsoft interhub transit. `!` in a BIRD table is a kernel-export warning; inspect Linux routes and actual packets rather than assuming the route is absent or blaming a traffic failure on this marker alone. A collector verdict of PASS means complete measurements and exact configuration closure, not 42 successful traffic directions.
 
 During B1's three-prepend withdrawal, Japan's firewall exposes two equal-length remote Japan-prefix entries, one through EU and one through US. All twelve hub/prefix keys remain present, but there are thirteen rows. The inherited single-winner check therefore records `complete: false`; this flag is retained in raw evidence and does not mean a prefix was missing in that state.
 
@@ -556,23 +161,33 @@ filter azure_export {
 }
 ```
 
-### A: all 42 traffic directions
+### A: 24 DC/Azure acceptance directions
 
-| Source / destination | dc-eu | dc-us | dc-jp | cn | spoke-eu | spoke-us | spoke-jp |
-|---|---|---|---|---|---|---|---|
-| dc-eu | - | P/P | F/F | P/P | P/P | P/P | P/P |
-| dc-us | P/P | - | F/F | P/P | P/P | P/P | P/P |
-| dc-jp | F/P | F/P | - | P/P | P/P | P/P | P/P |
-| cn | P/P | P/P | P/P | - | P/P | P/P | P/P |
-| spoke-eu | P/P | P/P | P/P | P/P | - | P/P | P/P |
-| spoke-us | P/P | P/P | P/P | P/P | P/P | - | P/P |
-| spoke-jp | P/P | P/P | P/P | P/P | P/P | P/P | - |
+**DC -> Azure spoke**
+
+| DC / Azure spoke | spoke-eu | spoke-us | spoke-jp |
+|---|---|---|---|
+| dc-eu | P/P | P/P | P/P |
+| dc-us | P/P | P/P | P/P |
+| dc-jp | P/P | P/P | P/P |
+| cn | P/P | P/P | P/P |
+
+**Azure spoke -> DC**
+
+| DC / Azure spoke | spoke-eu | spoke-us | spoke-jp |
+|---|---|---|---|
+| dc-eu | P/P | P/P | P/P |
+| dc-us | P/P | P/P | P/P |
+| dc-jp | P/P | P/P | P/P |
+| cn | P/P | P/P | P/P |
 
 ## B1: Customer backbone through HRP
 
 The primary capture uses `ExpressRoute` on all hubs, the original three extra EU/US nonlocal prepends, no extra Japan prepends, and spoke-only Azure imports. It is the final state after withdrawing and restoring only Japan's direct `10.130.0.0/24` Azure export. Mesh exports and tunnel configurations are unchanged.
 
 The initial state, withdrawal, return, one-ASN-difference replay and `VpnGateway` HRP control are reported separately below. A final local winner must not be presented as proof that the HRP change alone produced it.
+
+B1's traffic capture predates the focused workload UDR correction. It has not been repeated with that correction, so its 10/24 TCP and 14/24 ICMP results must not be compared with corrected A/B2 as an HRP-only forwarding experiment.
 
 Matched state: [B1, JP direct prefix returned](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/scenario-result.json). Full BIRD configurations: [EU](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-eu.conf), [US](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-us.conf), [JP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-jp.conf), [CN](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B1-20261017/B1-returned/router-cn.conf).
 
@@ -659,34 +274,44 @@ filter azure_export {
 }
 ```
 
-### B1: all 42 traffic directions
+### B1: 24 DC/Azure acceptance directions
 
-| Source / destination | dc-eu | dc-us | dc-jp | cn | spoke-eu | spoke-us | spoke-jp |
-|---|---|---|---|---|---|---|---|
-| dc-eu | - | P/P | P/P | P/P | P/P | F/F | P/P |
-| dc-us | P/P | - | P/P | P/P | F/F | P/P | P/P |
-| dc-jp | P/P | P/P | - | P/P | F/F | F/F | F/F |
-| cn | P/P | P/P | P/P | - | F/F | F/F | P/P |
-| spoke-eu | P/P | F/P | F/F | F/P | - | P/P | P/P |
-| spoke-us | F/P | P/P | F/F | F/P | P/P | - | P/P |
-| spoke-jp | P/P | P/P | F/F | P/P | P/P | P/P | - |
+**DC -> Azure spoke**
+
+| DC / Azure spoke | spoke-eu | spoke-us | spoke-jp |
+|---|---|---|---|
+| dc-eu | P/P | F/F | P/P |
+| dc-us | F/F | P/P | P/P |
+| dc-jp | F/F | F/F | F/F |
+| cn | F/F | F/F | P/P |
+
+**Azure spoke -> DC**
+
+| DC / Azure spoke | spoke-eu | spoke-us | spoke-jp |
+|---|---|---|---|
+| dc-eu | P/P | F/P | P/P |
+| dc-us | F/P | P/P | P/P |
+| dc-jp | F/F | F/F | F/F |
+| cn | F/P | F/P | P/P |
 
 ## B2: Customer backbone through AS-path control
 
 All hubs use `ASPath`. EU/US nonlocal extra prepends are removed; Japan still has no extra prepends. Azure imports remain spoke-only, so NVAs keep foreign DCs on their mesh. Removing prepends shortens the local offer; this is not a claim that adding prepends everywhere favors the customer backbone.
 
-Matched state: [B2, zero extra EU/US prepends](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/scenario-result.json). Full BIRD configurations: [EU](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-eu.conf), [US](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-us.conf), [JP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-jp.conf), [CN](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-B2-20261017/B2/router-cn.conf).
+The primary capture now includes the three-spoke Japan workload UDR to `10.130.0.4` and passes 24/24 DC/Azure directions. The no-UDR and UDR-removal controls below isolate the previous six failures without changing BGP policy.
+
+Matched state: [B2, three-spoke workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/scenario-result.json). Full BIRD configurations: [EU](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/router-eu.conf), [US](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/router-us.conf), [JP](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/router-jp.conf), [CN](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/router-cn.conf).
 
 ### B2: complete EU firewall table
 
 | Prefix | ASPath | NextHopType |
 |---|---|---|
-| `10.110.0.0/24` | `65011` | HubBgpConnection |
-| `10.140.0.0/24` | `65011-65014` | HubBgpConnection |
-| `10.130.0.0/24` | `65011-65013` | HubBgpConnection |
-| `10.120.0.0/24` | `65011-65012` | HubBgpConnection |
 | `10.210.0.0/24` | empty | Virtual Network Connection |
 | `10.10.0.0/24` | empty | Virtual Network Connection |
+| `10.110.0.0/24` | `65011` | HubBgpConnection |
+| `10.130.0.0/24` | `65011-65013` | HubBgpConnection |
+| `10.120.0.0/24` | `65011-65012` | HubBgpConnection |
+| `10.140.0.0/24` | `65011-65014` | HubBgpConnection |
 | `10.30.0.0/24` | `65520-65520` | Remote Hub |
 | `10.220.0.0/24` | `65520-65520` | Remote Hub |
 | `10.20.0.0/24` | `65520-65520` | Remote Hub |
@@ -696,10 +321,10 @@ Matched state: [B2, zero extra EU/US prepends](https://github.com/erjosito/net-l
 
 | Prefix | ASPath | NextHopType |
 |---|---|---|
-| `10.140.0.0/24` | `65013-65014` | VPN_S2S_Gateway |
 | `10.120.0.0/24` | `65013-65012` | VPN_S2S_Gateway |
-| `10.110.0.0/24` | `65013-65011` | VPN_S2S_Gateway |
+| `10.140.0.0/24` | `65013-65014` | VPN_S2S_Gateway |
 | `10.130.0.0/24` | `65013` | VPN_S2S_Gateway |
+| `10.110.0.0/24` | `65013-65011` | VPN_S2S_Gateway |
 | `10.10.0.0/24` | `65520-65520` | Remote Hub |
 | `10.220.0.0/24` | `65520-65520` | Remote Hub |
 | `10.20.0.0/24` | `65520-65520` | Remote Hub |
@@ -755,17 +380,25 @@ filter azure_export {
 }
 ```
 
-### B2: all 42 traffic directions
+### B2: 24 DC/Azure acceptance directions
 
-| Source / destination | dc-eu | dc-us | dc-jp | cn | spoke-eu | spoke-us | spoke-jp |
-|---|---|---|---|---|---|---|---|
-| dc-eu | - | P/P | P/P | P/P | P/P | P/P | P/P |
-| dc-us | P/P | - | P/P | P/P | P/P | P/P | P/P |
-| dc-jp | P/P | P/P | - | P/P | F/F | F/F | F/F |
-| cn | P/P | P/P | P/P | - | P/P | P/P | P/P |
-| spoke-eu | P/P | P/P | F/F | P/P | - | P/P | P/P |
-| spoke-us | P/P | P/P | F/F | P/P | P/P | - | P/P |
-| spoke-jp | P/P | P/P | F/F | P/P | P/P | P/P | - |
+**DC -> Azure spoke**
+
+| DC / Azure spoke | spoke-eu | spoke-us | spoke-jp |
+|---|---|---|---|
+| dc-eu | P/P | P/P | P/P |
+| dc-us | P/P | P/P | P/P |
+| dc-jp | P/P | P/P | P/P |
+| cn | P/P | P/P | P/P |
+
+**Azure spoke -> DC**
+
+| DC / Azure spoke | spoke-eu | spoke-us | spoke-jp |
+|---|---|---|---|
+| dc-eu | P/P | P/P | P/P |
+| dc-us | P/P | P/P | P/P |
+| dc-jp | P/P | P/P | P/P |
+| cn | P/P | P/P | P/P |
 
 ## B1 initial selection and controlled route return
 
@@ -779,32 +412,182 @@ filter azure_export {
 | B1 one-ASN, returned | `65011-65011-65011-65013` (HubBgpConnection) | `65012-65012-65012-65012-65013` (HubBgpConnection) |
 | B1, VPN HRP | `65011-65011-65011-65011-65013` (HubBgpConnection) | `65012-65012-65012-65012-65013` (HubBgpConnection) |
 
-The three-prepend control offers local length five versus remote length three; the separate EU two-prepend control offers local four versus remote three. Only Japan's direct Azure prefix export is withdrawn; mesh exports and tunnels stay up. The earlier mixed-setting controls demonstrated different winners with identical configuration before/after re-advertisement. These new all-enabled results must be read alongside them, not used to invent an Azure-internal race/cache explanation. The published two-or-more-longer HRP caveat does not by itself explain every one-ASN case.
+### Start with one destination and two ways to reach it
+
+Consider an Azure VM in the EU spoke sending to the Japan DC workload, `10.130.0.10`.
+A **prefix** is a range of addresses: the route for `10.130.0.0/24` covers this workload.
+The EU hub can learn two BGP routes for that same prefix. They deliver packets to the same
+destination, but enter the on-premises network at different places:
+
+| Candidate at the EU hub | Where Azure learns it | Onward forwarding | AS path seen by the EU firewall | Length |
+|---|---|---|---|---|
+| Local | EU NVA's BGP connection to the EU hub | EU NVA -> customer mesh -> Japan NVA -> Japan workload | `65011 65011 65011 65011 65013` | 5 |
+| Remote | Japan VPN connection to the Japan hub, then advertised to EU | Microsoft interhub backbone -> Japan VPN -> Japan NVA -> Japan workload | `65520 65520 65013` | 3 |
+
+**Local means learned through a connection to the hub making the decision.** It does not mean
+the destination is physically nearby: Japan's prefix is local to the EU hub when the EU NVA
+advertises it there. Conversely, the Japan VPN's advertisement is remote from EU's perspective.
+The same reasoning applies at the US hub.
+
+An **AS path** lists autonomous-system numbers carried with a BGP route. **Prepending** repeats
+an ASN to make an advertisement less attractive under a shortest-path policy. Here the EU NVA
+adds three extra copies of `65011` for nonlocal DC prefixes. Those repeated numbers do not
+mean traffic traverses four EU appliances. Azure adds `65520 65520` when the Japan route is
+advertised between hubs.
+
+With **HRP = ASPath**, the length-three remote route should win over length five: this is the
+Microsoft-backbone direction. With **HRP = ExpressRoute or VPN**, the documented ordering checks
+local-versus-remote *before* AS-path length. The expected B1 winner is therefore the longer
+local NVA route, which leaves Azure in EU and uses the customer mesh to Japan. ExpressRoute is
+the preference's name; this lab has no ExpressRoute circuit.
+
+### What "history-dependent" means, step by step
+
+The surprising observation is not that a longer route can win under B1. That is expected.
+It is that changing the preference did not always move an already-selected remote route:
+
+| Step | What we change | What stays available | Measured EU/US winner for Japan |
+|---|---|---|---|
+| 1. Start with the remote route already selected | Establish the initial route history | Local length 5 and remote length 3 advertisements | Remote length 3 |
+| 2. Apply ExpressRoute HRP | Hub routing preference, not the NVA advertisements | Both candidates; local is expected to take priority | Remote length 3 remains selected |
+| 3. Remove only the competing direct Japan advertisement | Withdraw `10.130.0.0/24` from Japan's Azure export | EU/US local mesh advertisements; VPN/BGP sessions and tunnels remain up | Local length 5 becomes selected |
+| 4. Put the Japan advertisement back exactly as it was | Restore Japan's original export configuration | Both candidates again | Local length 5 remains selected |
+
+Compare steps 2 and 4 carefully. The hub preferences and BIRD configuration bytes, ownership,
+permissions and modification times are the same, and both advertisements are present again.
+Nevertheless the selected route differs. Step 3 also demonstrates that the local advertisement
+is eligible: it can be installed when its remote competitor disappears. Thus "B1's dependency"
+means **the observed winner depends on the preceding route-selection history**, not just the
+final static policy. It is not a prerequisite service, a DC-to-DC reachability requirement, or
+a claim that the longer path is inherently invalid. We checked stable firewall snapshots at
+least 120 seconds apart rather than relying on a single update-time screenshot.
+
+### Is this the race condition in Microsoft's documentation?
+
+It may be related, but **we have not proved Azure's internal cause**. The
+[HRP documentation](https://learn.microsoft.com/en-us/azure/virtual-wan/about-virtual-hub-routing-preference)
+warns that ExpressRoute/VPN preference can select a remote route in a race condition when the
+local AS path is at least two entries longer. Our length-five versus length-three example
+matches that published condition. A race condition generally means that the order or timing
+of competing updates influences the resulting state; we did not instrument Azure's backend
+or identify an internal cache, timing window or particular implementation defect.
+
+The separate control is important: reducing EU's extra prepends from three to two creates a
+**local length-four versus remote length-three** comparison. It repeats the before/withdraw/
+return history dependence even though the gap is only one. Consequently the documented
+two-or-more-longer warning alone does not explain every measurement. Both controls reproduce
+with branch-to-branch enabled at WAN level and on every hub, so the former mixed flag setting
+is not a sufficient explanation either.
+
+The withdrawal is a **bounded lab diagnostic**, not a supported production workaround or a
+guarantee of a particular winner after future reconvergence. B1 should not be presented as
+"set HRP and every existing route immediately switches." Validate the effective routes after
+policy changes and route return, and treat this observation as something to investigate with
+Azure support if a production design depends on deterministic local preference.
+
+## B2's six Japan-workload failures: a workload steering fault, not an AS-path fault
+
+A focused reversible control sends **only the 24 requested DC/Azure directions**. The B2 BIRD sources, established peers, HRPs, branch flags, selected NVA routes and paired firewall winners stay unchanged while we add, then remove, three Azure UDRs:
+
+| Measured state | TCP / 24 | ICMP / 24 | DC/Azure reachability |
+|---|---|---|---|
+| [B2, before workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-before/traffic-summary.json) | 18 | 18 | FAIL |
+| [B2, three-spoke workload UDR](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/traffic-summary.json) | 24 | 24 | PASS |
+| [B2, workload UDR removed again](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-reverted/traffic-summary.json) | 18 | 18 | FAIL |
+
+### The missing route was outside BIRD
+
+The Japan probe's Linux `ip route get` already says `via 10.130.0.4` for each spoke. But the **Azure NIC effective route table is a separate forwarding layer**. Without a subnet UDR, its longest matching active route for all three spoke addresses is `10.0.0.0/8`, next hop `None`. Azure documents `None` as a drop route. A guest-only static route does not replace that Azure subnet route.
+
+This explains why looking only at the guest route or at BIRD was misleading. The emulated on-premises workload is itself an Azure VM, so Azure must also be told to steer its spoke-bound traffic to the emulated router. This is a lab workload steering requirement, not evidence that the B2 hub AS-path selection is wrong.
+
+| State | Destination | Active fabric prefix | Source | NextHopType | Next hop IP |
+|---|---|---|---|---|---|
+| B2, before workload UDR | `10.10.0.10` | `10.0.0.0/8` | Default | None | - |
+| B2, before workload UDR | `10.20.0.10` | `10.0.0.0/8` | Default | None | - |
+| B2, before workload UDR | `10.30.0.10` | `10.0.0.0/8` | Default | None | - |
+| B2, three-spoke workload UDR | `10.10.0.10` | `10.10.0.0/24` | User | VirtualAppliance | 10.130.0.4 |
+| B2, three-spoke workload UDR | `10.20.0.10` | `10.20.0.0/24` | User | VirtualAppliance | 10.130.0.4 |
+| B2, three-spoke workload UDR | `10.30.0.10` | `10.30.0.0/24` | User | VirtualAppliance | 10.130.0.4 |
+| B2, workload UDR removed again | `10.10.0.10` | `10.0.0.0/8` | Default | None | - |
+| B2, workload UDR removed again | `10.20.0.10` | `10.0.0.0/8` | Default | None | - |
+| B2, workload UDR removed again | `10.30.0.10` | `10.0.0.0/8` | Default | None | - |
+
+### A minimal, reversible fix
+
+Associate a route table with `vnet-dc-jp/workload` containing only:
+
+| Destination prefix | Next hop type | Next hop |
+|---|---|---|
+| `10.10.0.0/24` | VirtualAppliance | `10.130.0.4` |
+| `10.20.0.0/24` | VirtualAppliance | `10.130.0.4` |
+| `10.30.0.0/24` | VirtualAppliance | `10.130.0.4` |
+
+These /24 routes are more specific than the system /8 drop route. No DC prefix is redirected; in particular CN's WireGuard transport endpoint remains untouched. This focused B2 table is not A's earlier five-prefix table.
+
+All six Japan-workload/spoke directions change from FAIL to PASS for TCP and ICMP. Removing the association reproduces the six failures, while the original guest routes still point to the Japan NVA. The other eighteen requested directions keep passing.
+
+### Packet observations distinguish the layers
+
+| State / packet direction | EU | US | JP | CN |
+|---|---|---|---|---|
+| B2, before workload UDR: `10.10.0.10` -> `10.130.0.10` | enP1713s1 In, eth0 In, wgeujp Out | not observed | enP49605s1 Out, eth0 Out, wgeujp In | not observed |
+| B2, before workload UDR: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | not observed | not observed |
+| B2, before workload UDR: `10.30.0.10` -> `10.130.0.10` | not observed | not observed | enP49605s1 Out, eth0 Out, xfrm42 In | not observed |
+| B2, before workload UDR: `10.130.0.10` -> `10.30.0.10` | not observed | not observed | not observed | not observed |
+| B2, three-spoke workload UDR: `10.10.0.10` -> `10.130.0.10` | enP1713s1 In, eth0 In, wgeujp Out | not observed | enP49605s1 Out, eth0 Out, wgeujp In | not observed |
+| B2, three-spoke workload UDR: `10.130.0.10` -> `10.10.0.10` | enP1713s1 Out, eth0 Out, wgeujp In | not observed | enP49605s1 In, eth0 In, wgeujp Out | not observed |
+| B2, three-spoke workload UDR: `10.30.0.10` -> `10.130.0.10` | not observed | not observed | enP49605s1 Out, eth0 Out, xfrm41 In, xfrm42 In | not observed |
+| B2, three-spoke workload UDR: `10.130.0.10` -> `10.30.0.10` | not observed | not observed | enP49605s1 In, eth0 In, xfrm42 Out | not observed |
+| B2, workload UDR removed again: `10.10.0.10` -> `10.130.0.10` | enP1713s1 In, eth0 In, wgeujp Out | not observed | enP49605s1 Out, eth0 Out, wgeujp In | not observed |
+| B2, workload UDR removed again: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | not observed | not observed |
+| B2, workload UDR removed again: `10.30.0.10` -> `10.130.0.10` | not observed | not observed | enP49605s1 Out, eth0 Out, xfrm41 In, xfrm42 In | not observed |
+| B2, workload UDR removed again: `10.130.0.10` -> `10.30.0.10` | not observed | not observed | not observed | not observed |
+
+Before the UDR, EU/US-spoke packets are observed across the customer WireGuard mesh and leaving Japan's NVA toward the workload; Japan-spoke packets use the Japan XFRM interface. No Japan-workload-to-spoke packets are observed on the routers. With the UDR, those reverse packets appear too, and endpoint TCP/HTTP and ICMP succeed. The paired firewall winners and NVA selections do not change. Thus this intervention repairs workload steering without changing B2's route-preference design.
+
+Japan's BIRD `!` warning for its local spoke remains visible even in the passing state, and Linux already contains that XFRM route. The warning is worth investigating separately, but it was not the blocking cause of these six failures. This is a reachability and packet-interface result, not a throughput measurement or a universal path-symmetry proof.
+
+### Exact evidence and closure
+
+The original collector records **INCONCLUSIVE**, and that raw verdict is preserved. Its strict comparison included BIRD's displayed route timestamps: eighteen headline comparisons differ by only one millisecond. A separate offline reconciliation verifies that no non-timestamp headline content changed and that selected protocols, AS paths, local preferences, kernel markers, BGP next hops and BIRD interface resolution stayed the same. The comparator is corrected for future runs; no measurement or original verdict is rewritten. The reconciliation and independent restoration evidence below are what support the conclusions, not a claim that the original collector returned PASS.
+
+**B2, before workload UDR:** [complete state](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-before/scenario-result.json), [workload guest and NIC routes](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-before/workload-evidence.json), [24-direction traffic](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-before/traffic-summary.json), [router packet observations](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-before/path-observations.json).
+
+**B2, three-spoke workload UDR:** [complete state](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/scenario-result.json), [workload guest and NIC routes](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/workload-evidence.json), [24-direction traffic](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/traffic-summary.json), [router packet observations](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-with-UDR/path-observations.json).
+
+**B2, workload UDR removed again:** [complete state](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-reverted/scenario-result.json), [workload guest and NIC routes](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-reverted/workload-evidence.json), [24-direction traffic](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-reverted/traffic-summary.json), [router packet observations](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/B2-reverted/path-observations.json).
+
+The temporary route table was deleted after removing the association. Original BIRD bytes/metadata, hub preferences/branch flags and stable firewall winners were restored; an independent original-state capture repeated the original 10/24 TCP and 14/24 ICMP outcomes. Only the ten owned VMs started for this control were returned to their original deallocated states. No IPsec or WireGuard configuration changed.
+
+[Original collector and exact restoration verdict](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-control-20261017/diagnosis-verdict.json); [display-timestamp reconciliation](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-reconciled-20261017/reconciliation-verdict.json); [independent verification](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-independent-20261017/baseline-verdict.json); [final power restoration](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2-diagnosis-verify-power-stop-20261017/power-verdict.json).
+
+Reference: [Azure system routes, None next hop and user-defined routes](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview).
 
 ## Packet-interface evidence
 
 | State / packet direction | EU | US | JP | CN |
 |---|---|---|---|---|
-| A, NVA policy only: `10.110.0.10` -> `10.130.0.10` | enP40243s1 In, enP40243s1 Out, eth0 In, eth0 Out | not observed | not observed | not observed |
-| A, NVA policy only: `10.130.0.10` -> `10.110.0.10` | not observed | not observed | not observed | not observed |
 | A, NVA policy only: `10.10.0.10` -> `10.130.0.10` | not observed | not observed | enP2749s1 Out, eth0 Out, xfrm42 In | not observed |
 | A, NVA policy only: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | not observed | not observed |
-| A, plus JP workload UDR: `10.110.0.10` -> `10.130.0.10` | enP40243s1 In, enP40243s1 Out, eth0 In, eth0 Out | not observed | not observed | not observed |
-| A, plus JP workload UDR: `10.130.0.10` -> `10.110.0.10` | enP40243s1 In, enP40243s1 Out, eth0 In, eth0 Out | not observed | enP2749s1 In, eth0 In, xfrm42 Out | not observed |
+| A, NVA policy only: `10.30.0.10` -> `10.130.0.10` | not observed | not observed | enP2749s1 Out, eth0 Out, xfrm42 In | not observed |
+| A, NVA policy only: `10.130.0.10` -> `10.30.0.10` | not observed | not observed | not observed | not observed |
 | A, plus JP workload UDR: `10.10.0.10` -> `10.130.0.10` | not observed | not observed | enP2749s1 Out, eth0 Out, xfrm41 In, xfrm42 In | not observed |
 | A, plus JP workload UDR: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | enP2749s1 In, eth0 In, xfrm42 Out | not observed |
-| B1, JP direct prefix returned: `10.110.0.10` -> `10.130.0.10` | enP40243s1 In, eth0 In, wgeujp Out | not observed | enP2749s1 Out, eth0 Out, wgeujp In | not observed |
-| B1, JP direct prefix returned: `10.130.0.10` -> `10.110.0.10` | not observed | not observed | not observed | not observed |
+| A, plus JP workload UDR: `10.30.0.10` -> `10.130.0.10` | not observed | not observed | enP2749s1 Out, eth0 Out, xfrm42 In | not observed |
+| A, plus JP workload UDR: `10.130.0.10` -> `10.30.0.10` | not observed | not observed | enP2749s1 In, eth0 In, xfrm42 Out | not observed |
 | B1, JP direct prefix returned: `10.10.0.10` -> `10.130.0.10` | enP40243s1 In, eth0 In, wgeujp Out | not observed | enP2749s1 Out, eth0 Out, wgeujp In | not observed |
 | B1, JP direct prefix returned: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | not observed | not observed |
-| B2, zero extra EU/US prepends: `10.110.0.10` -> `10.130.0.10` | enP40243s1 In, eth0 In, wgeujp Out | not observed | enP2749s1 Out, eth0 Out, wgeujp In | not observed |
-| B2, zero extra EU/US prepends: `10.130.0.10` -> `10.110.0.10` | not observed | not observed | not observed | not observed |
-| B2, zero extra EU/US prepends: `10.10.0.10` -> `10.130.0.10` | enP40243s1 In, eth0 In, wgeujp Out | not observed | enP2749s1 Out, eth0 Out, wgeujp In | not observed |
-| B2, zero extra EU/US prepends: `10.130.0.10` -> `10.10.0.10` | not observed | not observed | not observed | not observed |
+| B1, JP direct prefix returned: `10.30.0.10` -> `10.130.0.10` | not observed | not observed | enP2749s1 Out, eth0 Out, xfrm41 In, xfrm42 In | not observed |
+| B1, JP direct prefix returned: `10.130.0.10` -> `10.30.0.10` | not observed | not observed | not observed | not observed |
+| B2, three-spoke workload UDR: `10.10.0.10` -> `10.130.0.10` | enP1713s1 In, eth0 In, wgeujp Out | not observed | enP49605s1 Out, eth0 Out, wgeujp In | not observed |
+| B2, three-spoke workload UDR: `10.130.0.10` -> `10.10.0.10` | enP1713s1 Out, eth0 Out, wgeujp In | not observed | enP49605s1 In, eth0 In, wgeujp Out | not observed |
+| B2, three-spoke workload UDR: `10.30.0.10` -> `10.130.0.10` | not observed | not observed | enP49605s1 Out, eth0 Out, xfrm41 In, xfrm42 In | not observed |
+| B2, three-spoke workload UDR: `10.130.0.10` -> `10.30.0.10` | not observed | not observed | enP49605s1 In, eth0 In, xfrm42 Out | not observed |
 
 ## Conclusions and boundaries
 
-Enabling Japan's hub flag alone did not change this baseline's firewall winners or traffic outcomes. The configuration inconsistency therefore was not sufficient to explain those failures. The per-design traffic matrices above establish exactly which workload directions passed; selected routes alone do not establish a successful backbone design. Residual failures and any `!` flags remain failures, not success-shaped exceptions. No bandwidth advantage was measured. Configuration, original hub settings and original VM power states were restored after the rerun.
+Enabling Japan's hub flag alone did not change this baseline's firewall winners or traffic outcomes. The configuration inconsistency therefore was not sufficient to explain those failures. The per-design traffic matrices above establish exactly which workload directions passed; selected routes alone do not establish a successful backbone design. DC-to-DC results are not success criteria; A plus its workload UDR passes all 24 requested DC/Azure directions, as does B2 with the focused three-spoke workload UDR. B2's six earlier failures reproduce when that UDR is removed, without changing its hub/NVA route selections. BIRD `!` warnings remain visible but are not equated with a proven packet-drop cause. No bandwidth advantage was measured. Configuration, original hub settings and original VM power states were restored after the rerun.
 
 [Full rerun report and raw evidence](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/b2b-summary-20261017/README.md). Earlier mixed-setting results and their original verdicts remain linked in [references.md](./references.md).
 
