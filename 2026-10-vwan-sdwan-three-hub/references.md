@@ -101,3 +101,14 @@ Those original verdicts are preserved; the later successful controls do not retr
 - [BIRD 2 documentation](https://bird.network.cz/?get_doc&v=20&f=bird.html).
 
 The diagnostic discriminators remain `AzureFirewalls` (plural) for secured firewall routes and `HubVirtualNetworkConnection` (singular) for unsecured connection routes. The topology SVG is unchanged and represents connectivity, not proof that every drawn path carries test traffic.
+
+## HRP change followed by BGP-only resets, 19 October 2026
+
+[Full report and matched tables](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reset-summary-20261019/README.md).
+
+- [ExpressRoute, japan-first](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reset-expressroute-japan-first-20261019/after-reset/scenario-result.json).
+- [ExpressRoute, nva-first](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reset-expressroute-nva-first-20261019/after-reset/scenario-result.json).
+- [VpnGateway, japan-first](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reset-vpngateway-japan-first-retry-20261019/after-reset/scenario-result.json).
+- [VpnGateway, nva-first](https://github.com/erjosito/net-lab-builder/blob/main/labs/vwan-sdwan-three-hub/show-output/hrp-reset-vpngateway-nva-first-20261019/after-reset/scenario-result.json).
+
+Only Azure-facing `azure_0`/`azure_1` protocols were cycled. Mesh sessions and the BIRD process were preserved; strongSwan and WireGuard were not restarted. The Japan workload UDR was held consistent for all forwarding captures. The two re-enable orders per HRP mode are limited lab observations, not a universal determinism guarantee.
