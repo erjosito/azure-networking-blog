@@ -6,6 +6,9 @@ Hands-on diagnostics, gotchas, and field findings from deploying and troubleshoo
 
 The following posts have been dynamically generated with GitHub Copilot CLI and [Squad](https://github.com/bradygaster/squad) with little to zero human intervention.
 
+- **[2026-10] Disabling VNet peering route propagation on Azure `GatewaySubnet`: fixing asymmetric routing with summarized UDRs**: A 10-spoke hub-and-spoke + StrongSwan S2S VPN + Linux NVA lab demonstrates why `VNetPeering` `/16` routes override a `10.0.0.0/8` summary UDR and drop stateful return traffic, how `--disable-peering-route All` (and the `/16` UDR workaround while `AllowDisablePeeringRoutes` awaits `ApprovalRequired` PG sign-off) restores symmetric inspection, and why spoke route tables cannot disable peering routes when the NVA lives in the hub VNet
+  - [Read post](./2026-10-disable-peering-route-propagation/)
+
 - **[2026-10] Subnet peering: expose overlapping backends without extra transit VNets**: Two distinct backends keep the same IP while unique in-spoke NAT aliases avoid an extra transit VNet layer; HTTP, effective routes, and the complete 78-file evidence archive explain the tested path and cost caveats
   - [Read post](./2026-10-subnet-peering-overlapping-spokes/)
 
